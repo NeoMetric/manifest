@@ -28,3 +28,5 @@ coverage/
 .gstack/
 scripts/.env.verify
 scripts/verify-free-model-ids.sh
+.kilo/
+*.dump

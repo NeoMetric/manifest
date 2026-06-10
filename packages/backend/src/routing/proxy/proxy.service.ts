@@ -395,6 +395,11 @@ export class ProxyService {
     specificityOverride: ProxyRequestOptions['specificityOverride'],
     headers: ProxyRequestOptions['headers'],
   ) {
+    const explicitModel = typeof body.model === 'string' ? body.model.trim() : '';
+    if (explicitModel && explicitModel.toLowerCase() !== 'auto') {
+      return this.resolveService.resolveForModel(agentId, explicitModel);
+    }
+
     const messages = body.messages as ScorerMessage[];
     const scoringMessages = this.filterScoringMessages(messages);
     const scoringTools = Array.isArray(body.tools) ? body.tools : undefined;

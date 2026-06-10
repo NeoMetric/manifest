@@ -868,4 +868,88 @@ describe('ResolveService', () => {
       expect(result.reason).toBe('default');
     });
   });
+
+  describe('resolveForModel', () => {
+    it('returns the route when the model is found in discovered models', async () => {
+      discoveryService.getModelsForAgent.mockResolvedValue([
+        {
+          id: 'gpt-5.4',
+          provider: 'openai',
+          authType: 'api_key',
+          displayName: 'GPT-5.4',
+          contextWindow: 272000,
+          inputPricePerToken: 0,
+          outputPricePerToken: 0,
+          capabilityReasoning: true,
+          capabilityCode: true,
+          qualityScore: 3,
+          inputModalities: ['text'],
+          outputModalities: ['text'],
+          capabilities: ['text', 'tools', 'stream'],
+        } as never,
+      ]);
+
+      const result = await svc.resolveForModel('agent-1', 'gpt-5.4');
+
+      expect(result.route).toEqual(route('openai', 'api_key', 'gpt-5.4'));
+      expect(result.reason).toBe('explicit-model');
+      expect(result.fallback_routes).toBeNull();
+    });
+
+    it('returns route null when the model is not found', async () => {
+      discoveryService.getModelsForAgent.mockResolvedValue([
+        {
+          id: 'gpt-5.5',
+          provider: 'openai',
+          authType: 'api_key',
+          displayName: 'GPT-5.5',
+          contextWindow: 272000,
+          inputPricePerToken: 0,
+          outputPricePerToken: 0,
+          capabilityReasoning: true,
+          capabilityCode: true,
+          qualityScore: 3,
+          inputModalities: ['text'],
+          outputModalities: ['text'],
+          capabilities: ['text', 'tools', 'stream'],
+        } as never,
+      ]);
+
+      const result = await svc.resolveForModel('agent-1', 'gpt-5.4');
+
+      expect(result.route).toBeNull();
+      expect(result.reason).toBe('explicit-model');
+    });
+
+    it('enriches the route with the default key label', async () => {
+      discoveryService.getModelsForAgent.mockResolvedValue([
+        {
+          id: 'claude-sonnet-4-20250514',
+          provider: 'anthropic',
+          authType: 'api_key',
+          displayName: 'Claude Sonnet 4',
+          contextWindow: 200000,
+          inputPricePerToken: 0,
+          outputPricePerToken: 0,
+          capabilityReasoning: true,
+          capabilityCode: true,
+          qualityScore: 3,
+          inputModalities: ['text'],
+          outputModalities: ['text'],
+          capabilities: ['text', 'tools', 'stream'],
+        } as never,
+      ]);
+      providerKeyService.getDefaultKeyLabel.mockResolvedValue('My Anthropic Key');
+
+      const result = await svc.resolveForModel('agent-1', 'claude-sonnet-4-20250514');
+
+      expect(result.route).toEqual(
+        expect.objectContaining({
+          provider: 'anthropic',
+          model: 'claude-sonnet-4-20250514',
+          keyLabel: 'My Anthropic Key',
+        }),
+      );
+    });
+  });
 });
