@@ -23,7 +23,7 @@ describe('provider-client-converters', () => {
       expect(result).toHaveProperty('stream_options');
     });
 
-    it('should strip OpenAI-only fields for non-passthrough providers', () => {
+    it('should strip OpenAI-only fields but preserve reasoning_effort for non-passthrough providers', () => {
       const body = {
         messages: [{ role: 'user', content: 'Hi' }],
         model: 'mistral-large',
@@ -47,8 +47,30 @@ describe('provider-client-converters', () => {
       expect(result).not.toHaveProperty('modalities');
       expect(result).not.toHaveProperty('audio');
       expect(result).not.toHaveProperty('prediction');
-      expect(result).not.toHaveProperty('reasoning_effort');
+      expect(result).toHaveProperty('reasoning_effort', 'medium');
       expect(result).toHaveProperty('temperature', 0.5);
+    });
+
+    it('should pass reasoning_effort through for custom providers', () => {
+      const body = {
+        messages: [{ role: 'user', content: 'Hi' }],
+        reasoning_effort: 'high',
+      };
+
+      const result = sanitizeOpenAiBody(body, 'custom', 'mimo-v2.5');
+
+      expect(result).toHaveProperty('reasoning_effort', 'high');
+    });
+
+    it('should pass reasoning_effort through for anthropic endpoint', () => {
+      const body = {
+        messages: [{ role: 'user', content: 'Hi' }],
+        reasoning_effort: 'high',
+      };
+
+      const result = sanitizeOpenAiBody(body, 'anthropic', 'claude-sonnet-4-6');
+
+      expect(result).toHaveProperty('reasoning_effort', 'high');
     });
 
     it('should convert max_completion_tokens to max_tokens for non-passthrough providers', () => {

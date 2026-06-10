@@ -158,6 +158,16 @@ export class ProviderClient {
 
     this.logger.debug(`Forwarding to ${endpointKey}: ${url.replace(/key=[^&]+/, 'key=***')}`);
 
+    if (process.env.MANIFEST_PROXY_DEBUG === 'true') {
+      const redactedHeaders: Record<string, string> = {};
+      for (const [k, v] of Object.entries(finalHeaders)) {
+        redactedHeaders[k] =
+          k.toLowerCase() === 'authorization' || k.toLowerCase() === 'x-api-key' ? '***' : v;
+      }
+      this.logger.debug(`[${endpointKey}] Headers: ${JSON.stringify(redactedHeaders)}`);
+      this.logger.debug(`[${endpointKey}] Body: ${JSON.stringify(requestBody, null, 2)}`);
+    }
+
     // SSRF defense in depth for user-supplied endpoint URLs (custom providers,
     // subscription resource URLs). validatePublicUrl was called when the URL
     // was stored, but DNS for the hostname may have rebound to a private or

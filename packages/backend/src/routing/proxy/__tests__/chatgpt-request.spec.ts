@@ -191,4 +191,57 @@ describe('ChatGPT Adapter – toResponsesRequest', () => {
     expect(result.instructions).toBe('You are a helpful assistant.');
     expect(result.input).toEqual([{ role: 'user', content: [{ type: 'input_text', text: 'Hi' }] }]);
   });
+
+  /* ── reasoning_effort → reasoning.effort mapping ── */
+
+  it('maps reasoning_effort string to reasoning.effort', () => {
+    const body = {
+      messages: [{ role: 'user', content: 'Hi' }],
+      reasoning_effort: 'high',
+    };
+    const result = toResponsesRequest(body, 'gpt-5');
+
+    expect(result.reasoning).toEqual({ effort: 'high' });
+  });
+
+  it('maps reasoning_effort "medium" to reasoning.effort', () => {
+    const body = {
+      messages: [{ role: 'user', content: 'Hi' }],
+      reasoning_effort: 'medium',
+    };
+    const result = toResponsesRequest(body, 'gpt-5');
+
+    expect(result.reasoning).toEqual({ effort: 'medium' });
+  });
+
+  it('does not override explicit body.reasoning with reasoning_effort', () => {
+    const body = {
+      messages: [{ role: 'user', content: 'Hi' }],
+      reasoning: { effort: 'low', max_tokens: 5000 },
+      reasoning_effort: 'high',
+    };
+    const result = toResponsesRequest(body, 'gpt-5');
+
+    // body.reasoning takes precedence
+    expect(result.reasoning).toEqual({ effort: 'low', max_tokens: 5000 });
+  });
+
+  it('does not set reasoning when reasoning_effort is absent', () => {
+    const body = {
+      messages: [{ role: 'user', content: 'Hi' }],
+    };
+    const result = toResponsesRequest(body, 'gpt-5');
+
+    expect(result.reasoning).toBeUndefined();
+  });
+
+  it('does not set reasoning when reasoning_effort is empty string', () => {
+    const body = {
+      messages: [{ role: 'user', content: 'Hi' }],
+      reasoning_effort: '',
+    };
+    const result = toResponsesRequest(body, 'gpt-5');
+
+    expect(result.reasoning).toBeUndefined();
+  });
 });
