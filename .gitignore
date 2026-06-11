@@ -32,3 +32,4 @@ scripts/verify-free-model-ids.sh
 *.dump
 /docker_personal/
 plan-*.prompt.md
+.github/*/*.agent.md
