@@ -98,8 +98,10 @@ export {
   CANONICAL_LOCAL_IDS,
   LOCAL_SERVER_HINTS,
   normalizeProviderName,
+  ROUTING_PREFIX_MAP,
+  resolveRoutingPrefix,
 } from './providers';
-export type { SharedProviderEntry, LocalServerHint } from './providers';
+export type { SharedProviderEntry, LocalServerHint, RoutingPrefixEntry } from './providers';
 export type { ResolveResponse } from './resolve-response';
 export {
   SUBSCRIPTION_PROVIDER_CONFIGS,

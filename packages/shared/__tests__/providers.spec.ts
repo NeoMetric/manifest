@@ -4,6 +4,8 @@ import {
   SHARED_PROVIDER_BY_ID_OR_ALIAS,
   LOCAL_SERVER_HINTS,
   normalizeProviderName,
+  ROUTING_PREFIX_MAP,
+  resolveRoutingPrefix,
 } from '../src/providers';
 
 describe('normalizeProviderName', () => {
@@ -194,5 +196,68 @@ describe('LOCAL_SERVER_HINTS', () => {
     expect(LOCAL_SERVER_HINTS.lmstudio.persistsBindAcrossLaunches).toBe(true);
     expect(LOCAL_SERVER_HINTS.llamacpp.persistsBindAcrossLaunches).toBeUndefined();
     expect(LOCAL_SERVER_HINTS.ollama.persistsBindAcrossLaunches).toBeUndefined();
+  });
+});
+
+describe('ROUTING_PREFIX_MAP', () => {
+  it('contains every canonical provider ID as a default prefix', () => {
+    for (const p of SHARED_PROVIDERS) {
+      const entry = ROUTING_PREFIX_MAP.get(p.id);
+      expect(entry).toBeDefined();
+      expect(entry!.providerId).toBe(p.id);
+      expect(entry!.authType).toBeUndefined(); // default entries have no authType hint
+    }
+  });
+
+  it('maps chatgpt to openai with subscription auth type', () => {
+    const entry = resolveRoutingPrefix('chatgpt');
+    expect(entry).toBeDefined();
+    expect(entry!.providerId).toBe('openai');
+    expect(entry!.authType).toBe('subscription');
+  });
+
+  it('maps claude to anthropic with subscription auth type', () => {
+    const entry = resolveRoutingPrefix('claude');
+    expect(entry).toBeDefined();
+    expect(entry!.providerId).toBe('anthropic');
+    expect(entry!.authType).toBe('subscription');
+  });
+
+  it('maps openai to openai with no auth type hint', () => {
+    const entry = resolveRoutingPrefix('openai');
+    expect(entry).toBeDefined();
+    expect(entry!.providerId).toBe('openai');
+    expect(entry!.authType).toBeUndefined();
+  });
+
+  it('maps anthropic to anthropic with no auth type hint', () => {
+    const entry = resolveRoutingPrefix('anthropic');
+    expect(entry).toBeDefined();
+    expect(entry!.providerId).toBe('anthropic');
+    expect(entry!.authType).toBeUndefined();
+  });
+
+  it('maps commandcode to commandcode', () => {
+    const entry = resolveRoutingPrefix('commandcode');
+    expect(entry).toBeDefined();
+    expect(entry!.providerId).toBe('commandcode');
+  });
+
+  it('maps xiaomi to xiaomi', () => {
+    const entry = resolveRoutingPrefix('xiaomi');
+    expect(entry).toBeDefined();
+    expect(entry!.providerId).toBe('xiaomi');
+  });
+
+  it('returns undefined for unknown prefixes', () => {
+    expect(resolveRoutingPrefix('unknownprovider')).toBeUndefined();
+    expect(resolveRoutingPrefix('')).toBeUndefined();
+  });
+
+  it('is case-insensitive', () => {
+    expect(resolveRoutingPrefix('ChatGPT')?.providerId).toBe('openai');
+    expect(resolveRoutingPrefix('CLAUDE')?.providerId).toBe('anthropic');
+    expect(resolveRoutingPrefix('OpenAI')?.providerId).toBe('openai');
+    expect(resolveRoutingPrefix('XIAOMI')?.providerId).toBe('xiaomi');
   });
 });
