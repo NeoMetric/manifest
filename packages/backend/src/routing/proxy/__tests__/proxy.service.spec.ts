@@ -84,9 +84,7 @@ const specCatalog: ProviderParamSpecCatalog = [
 ];
 
 describe('ProxyService — orchestration', () => {
-  let resolveService: jest.Mocked<
-    Pick<ResolveService, 'resolve' | 'resolveForTier' | 'resolveHeaderTier'>
-  >;
+  let resolveService: jest.Mocked<Pick<ResolveService, 'resolve' | 'resolveForTier'>>;
   let providerKeyService: jest.Mocked<
     Pick<
       ProviderKeyService,
@@ -125,10 +123,6 @@ describe('ProxyService — orchestration', () => {
     resolveService = {
       resolve: jest.fn(),
       resolveForTier: jest.fn(),
-      resolveHeaderTier: jest.fn().mockResolvedValue(null),
-    };
-    modelDiscovery = {
-      getModelsForAgent: jest.fn().mockResolvedValue([]),
     };
     providerKeyService = {
       getProviderApiKey: jest.fn().mockResolvedValue('decrypted-key'),
@@ -1959,6 +1953,126 @@ describe('ProxyService — orchestration', () => {
         baseOpts({ body: { messages: [{ role: 'user', content: 'hi' }] } }),
       );
       expect(result.forward.isResponses).toBe(true);
+    });
+  });
+
+  describe('explicit model bypass', () => {
+    it('calls resolveForModel when body.model is a specific model name', async () => {
+      resolveService.resolveForModel = jest.fn().mockResolvedValue({
+        tier: 'default',
+        route: route('openai', 'api_key', 'gpt-5.4'),
+        fallback_routes: null,
+        confidence: 1,
+        score: 0,
+        reason: 'explicit-model',
+      });
+      fallbackService.tryForwardToProvider.mockResolvedValue({
+        response: okResponse(),
+        isGoogle: false,
+        isAnthropic: false,
+        isChatGpt: false,
+      });
+
+      await svc.proxyRequest(
+        baseOpts({
+          body: { messages: [{ role: 'user', content: 'hi' }], model: 'gpt-5.4' },
+        }),
+      );
+
+      expect(resolveService.resolveForModel).toHaveBeenCalledWith('agent-1', 'gpt-5.4');
+      expect(resolveService.resolve).not.toHaveBeenCalled();
+    });
+
+    it('uses normal routing when body.model is "auto"', async () => {
+      resolveService.resolve.mockResolvedValue({
+        tier: 'standard',
+        route: route('openai', 'api_key', 'gpt-4o'),
+        fallback_routes: null,
+        confidence: 0.9,
+        score: 5,
+        reason: 'scored',
+      });
+      fallbackService.tryForwardToProvider.mockResolvedValue({
+        response: okResponse(),
+        isGoogle: false,
+        isAnthropic: false,
+        isChatGpt: false,
+      });
+
+      await svc.proxyRequest(
+        baseOpts({
+          body: { messages: [{ role: 'user', content: 'hi' }], model: 'auto' },
+        }),
+      );
+
+      expect(resolveService.resolve).toHaveBeenCalled();
+      expect(resolveService.resolveForModel).not.toHaveBeenCalled();
+    });
+
+    it('uses normal routing when body.model is absent', async () => {
+      resolveService.resolve.mockResolvedValue({
+        tier: 'standard',
+        route: route('openai', 'api_key', 'gpt-4o'),
+        fallback_routes: null,
+        confidence: 0.9,
+        score: 5,
+        reason: 'scored',
+      });
+      fallbackService.tryForwardToProvider.mockResolvedValue({
+        response: okResponse(),
+        isGoogle: false,
+        isAnthropic: false,
+        isChatGpt: false,
+      });
+
+      await svc.proxyRequest(baseOpts());
+
+      expect(resolveService.resolve).toHaveBeenCalled();
+    });
+
+    it('returns no-route error when explicit model is not found', async () => {
+      resolveService.resolveForModel = jest.fn().mockResolvedValue({
+        tier: 'default',
+        route: null,
+        fallback_routes: null,
+        confidence: 1,
+        score: 0,
+        reason: 'explicit-model',
+      });
+
+      const result = await svc.proxyRequest(
+        baseOpts({
+          body: { messages: [{ role: 'user', content: 'hi' }], model: 'nonexistent-model' },
+        }),
+      );
+
+      const body = await result.forward.response.text();
+      expect(body).toContain('M101');
+    });
+
+    it('trims whitespace from model before comparison', async () => {
+      resolveService.resolveForModel = jest.fn().mockResolvedValue({
+        tier: 'default',
+        route: route('openai', 'api_key', 'gpt-5.4'),
+        fallback_routes: null,
+        confidence: 1,
+        score: 0,
+        reason: 'explicit-model',
+      });
+      fallbackService.tryForwardToProvider.mockResolvedValue({
+        response: okResponse(),
+        isGoogle: false,
+        isAnthropic: false,
+        isChatGpt: false,
+      });
+
+      await svc.proxyRequest(
+        baseOpts({
+          body: { messages: [{ role: 'user', content: 'hi' }], model: '  gpt-5.4  ' },
+        }),
+      );
+
+      expect(resolveService.resolveForModel).toHaveBeenCalledWith('agent-1', 'gpt-5.4');
     });
   });
 

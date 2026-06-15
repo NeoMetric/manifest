@@ -169,6 +169,43 @@ export class ResolveService {
     };
   }
 
+  async resolveForModel(agentId: string, model: string): Promise<ResolveResponse> {
+    const allModels = await this.discoveryService.getModelsForAgent(agentId);
+    const match = allModels.find((m) => m.id === model);
+
+    if (!match) {
+      this.logger.warn(
+        `Explicit model "${model}" not found in discovered models for agent=${agentId}`,
+      );
+      return {
+        tier: 'default',
+        route: null,
+        fallback_routes: null,
+        output_modality: DEFAULT_OUTPUT_MODALITY,
+        response_mode: DEFAULT_RESPONSE_MODE,
+        confidence: 1,
+        score: 0,
+        reason: 'explicit-model',
+      };
+    }
+
+    const provider = match.provider;
+    const authType = await this.providerKeyService.getAuthType(agentId, provider);
+    const baseRoute: ModelRoute = { provider, authType, model };
+    const route = await this.enrichRouteKeyLabel(agentId, baseRoute);
+
+    return {
+      tier: 'default',
+      route,
+      fallback_routes: null,
+      output_modality: DEFAULT_OUTPUT_MODALITY,
+      response_mode: DEFAULT_RESPONSE_MODE,
+      confidence: 1,
+      score: 0,
+      reason: 'explicit-model',
+    };
+  }
+
   async resolveForTier(
     agentId: string,
     tenantId: string,
