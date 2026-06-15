@@ -118,6 +118,11 @@ export function toResponsesRequest(
 
   if (isObjectRecord(body.reasoning)) {
     request.reasoning = body.reasoning;
+  } else if (typeof body.reasoning_effort === 'string' && body.reasoning_effort) {
+    // Chat Completions clients (e.g. GitHub Copilot) send reasoning_effort as
+    // a flat string. Map it to the Responses API nested shape so the upstream
+    // receives the user's reasoning effort selection.
+    request.reasoning = { effort: body.reasoning_effort };
   }
 
   if (isObjectRecord(body.text)) {

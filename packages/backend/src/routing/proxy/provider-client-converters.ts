@@ -101,8 +101,14 @@ const OPENAI_ONLY_FIELDS = new Set([
   'modalities',
   'audio',
   'prediction',
-  'reasoning_effort',
 ]);
+
+/**
+ * Fields that must pass through to ALL providers, including custom ones.
+ * Unlike OPENAI_ONLY_FIELDS, these are never stripped — they are universal
+ * enough that upstream providers either accept or silently ignore them.
+ */
+const ALWAYS_PASSTHROUGH_FIELDS = new Set(['reasoning_effort']);
 
 /**
  * Providers that accept the full OpenAI top-level request schema without modification.

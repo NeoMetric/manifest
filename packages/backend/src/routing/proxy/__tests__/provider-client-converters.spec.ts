@@ -23,7 +23,7 @@ describe('provider-client-converters', () => {
       expect(result).toHaveProperty('stream_options');
     });
 
-    it('should strip OpenAI-only fields for non-passthrough providers', () => {
+    it('should strip OpenAI-only fields but preserve reasoning_effort for non-passthrough providers', () => {
       const body = {
         messages: [{ role: 'user', content: 'Hi' }],
         model: 'mistral-large',
@@ -47,7 +47,7 @@ describe('provider-client-converters', () => {
       expect(result).not.toHaveProperty('modalities');
       expect(result).not.toHaveProperty('audio');
       expect(result).not.toHaveProperty('prediction');
-      expect(result).not.toHaveProperty('reasoning_effort');
+      expect(result).toHaveProperty('reasoning_effort', 'medium');
       expect(result).toHaveProperty('temperature', 0.5);
     });
 
