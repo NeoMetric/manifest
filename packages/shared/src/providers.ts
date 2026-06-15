@@ -1,3 +1,5 @@
+import type { AuthType } from './auth-types';
+
 /**
  * Canonical provider registry shared between backend and frontend.
  *
@@ -59,7 +61,7 @@ export const SHARED_PROVIDERS: readonly SharedProviderEntry[] = [
   {
     id: 'anthropic',
     displayName: 'Anthropic',
-    aliases: [],
+    aliases: ['claude'],
     openRouterPrefixes: ['anthropic'],
     requiresApiKey: true,
     localOnly: false,
@@ -344,7 +346,7 @@ export const SHARED_PROVIDERS: readonly SharedProviderEntry[] = [
   {
     id: 'openai',
     displayName: 'OpenAI',
-    aliases: [],
+    aliases: ['chatgpt'],
     openRouterPrefixes: ['openai'],
     requiresApiKey: true,
     localOnly: false,
@@ -449,6 +451,63 @@ export const SHARED_PROVIDER_BY_ID_OR_ALIAS: ReadonlyMap<string, SharedProviderE
     ...p.aliases.map((a): [string, SharedProviderEntry] => [a, p]),
   ]),
 );
+
+/**
+ * Auth-type-aware routing prefix for explicit `provider/model` requests.
+ *
+ * When a model string contains a `/`, the part before the slash is looked up
+ * in this map. Each entry resolves to a canonical provider ID and an optional
+ * auth-type hint. If the hint is set, the route is forced to that auth type
+ * (e.g. `chatgpt/gpt-5.5` → `openai` + `subscription`). If absent, the
+ * system picks the best available auth type for the agent.
+ *
+ * Built automatically from SHARED_PROVIDERS + SUBSCRIPTION_PROVIDER_CONFIGS.
+ * Providers whose subscription prefix differs from their canonical ID get a
+ * separate entry (e.g. `chatgpt` → `openai`, `claude` → `anthropic`).
+ */
+export interface RoutingPrefixEntry {
+  /** Canonical provider ID (matches SHARED_PROVIDER_BY_ID keys). */
+  providerId: string;
+  /** If set, forces this auth type for the route. */
+  authType?: AuthType;
+}
+
+/** Subscription-specific prefix overrides for providers where the
+ * subscription product name differs from the canonical provider ID. */
+const SUBSCRIPTION_PREFIX_OVERRIDES: ReadonlyMap<string, string> = new Map([
+  ['chatgpt', 'openai'],
+  ['claude', 'anthropic'],
+]);
+
+function buildRoutingPrefixMap(): Map<string, RoutingPrefixEntry> {
+  const map = new Map<string, RoutingPrefixEntry>();
+
+  // 1. Every provider gets a default entry keyed by its canonical ID.
+  for (const p of SHARED_PROVIDERS) {
+    if (!map.has(p.id)) {
+      map.set(p.id, { providerId: p.id });
+    }
+  }
+
+  // 2. Subscription-specific prefixes where the product name differs.
+  for (const [prefix, canonicalId] of SUBSCRIPTION_PREFIX_OVERRIDES) {
+    if (!map.has(prefix)) {
+      map.set(prefix, { providerId: canonicalId, authType: 'subscription' });
+    }
+  }
+
+  return map;
+}
+
+export const ROUTING_PREFIX_MAP: ReadonlyMap<string, RoutingPrefixEntry> = buildRoutingPrefixMap();
+
+/**
+ * Resolve a routing prefix to a canonical provider ID and optional auth-type
+ * hint. Returns `undefined` if the prefix is not recognized.
+ */
+export function resolveRoutingPrefix(prefix: string): RoutingPrefixEntry | undefined {
+  return ROUTING_PREFIX_MAP.get(prefix.toLowerCase());
+}
 
 /**
  * Collapse whitespace, dots, underscores, and hyphens so variants like

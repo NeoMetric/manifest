@@ -107,6 +107,55 @@ export class ModelController {
     return this.ollamaSync.sync();
   }
 
+  /**
+   * Return all discovered models formatted as `provider/model` routes.
+   * Each entry includes the routing prefix, canonical provider ID, auth type,
+   * and model metadata. Useful for agents that want to enumerate available
+   * models and send explicit `provider/model` requests.
+   */
+  @Get(':agentName/models-with-providers')
+  async getModelsWithProviders(@CurrentUser() user: AuthUser, @Param() params: AgentNameParamDto) {
+    const agent = await this.resolveAgentService.resolve(user.id, params.agentName);
+    const models = await this.discoveryService.getModelsForAgent(agent.id);
+
+    // Build a reverse lookup: (canonicalProviderId, authType) → routing prefix.
+    // For providers where the subscription prefix differs from the canonical ID
+    // (chatgpt→openai, claude→anthropic), use that specific prefix. Otherwise
+    // use the provider's canonical ID.
+    const prefixByProviderAuth = new Map<string, string>();
+    for (const [prefix, entry] of ROUTING_PREFIX_MAP) {
+      const key = entry.authType ? `${entry.providerId}::${entry.authType}` : entry.providerId;
+      // Only set if not already claimed by a subscription-specific prefix.
+      if (!prefixByProviderAuth.has(key)) {
+        prefixByProviderAuth.set(key, prefix);
+      }
+    }
+
+    return models.map((m) => {
+      const authType = m.authType ?? 'api_key';
+      const canonicalProvider = m.provider.startsWith('custom:') ? m.provider : m.provider;
+
+      // Resolve the routing prefix for this model.
+      const providerAuthKey = `${canonicalProvider}::${authType}`;
+      const routingPrefix =
+        prefixByProviderAuth.get(providerAuthKey) ??
+        prefixByProviderAuth.get(canonicalProvider) ??
+        canonicalProvider;
+
+      const route = `${routingPrefix}/${m.id}`;
+
+      return {
+        route,
+        model: m.id,
+        provider: canonicalProvider,
+        auth_type: authType,
+        context_window: m.contextWindow,
+        display_name: m.displayName || null,
+        quality_score: m.qualityScore,
+      };
+    });
+  }
+
   @Get(':agentName/available-models')
   async getAvailableModels(@TenantCtx() ctx: TenantContext, @Param() params: AgentNameParamDto) {
     // allowPlayground: true — the Playground frontend reads available models for the

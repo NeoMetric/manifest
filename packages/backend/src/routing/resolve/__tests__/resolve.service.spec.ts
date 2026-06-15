@@ -1052,32 +1052,6 @@ describe('ResolveService', () => {
   });
 
   describe('resolveForModel', () => {
-    it('returns the route when the model is found in discovered models', async () => {
-      discoveryService.getModelsForAgent.mockResolvedValue([
-        {
-          id: 'gpt-5.4',
-          provider: 'openai',
-          authType: 'api_key',
-          displayName: 'GPT-5.4',
-          contextWindow: 272000,
-          inputPricePerToken: 0,
-          outputPricePerToken: 0,
-          capabilityReasoning: true,
-          capabilityCode: true,
-          qualityScore: 3,
-          inputModalities: ['text'],
-          outputModalities: ['text'],
-          capabilities: ['text', 'tools', 'stream'],
-        } as never,
-      ]);
-
-      const result = await svc.resolveForModel('agent-1', 'gpt-5.4');
-
-      expect(result.route).toEqual(route('openai', 'api_key', 'gpt-5.4'));
-      expect(result.reason).toBe('explicit-model');
-      expect(result.fallback_routes).toBeNull();
-    });
-
     it('returns route null when the model is not found', async () => {
       discoveryService.getModelsForAgent.mockResolvedValue([
         {
@@ -1103,12 +1077,12 @@ describe('ResolveService', () => {
       expect(result.reason).toBe('explicit-model');
     });
 
-    it('enriches the route with the default key label', async () => {
+    it('enriches the route with the default key label for explicit provider/model', async () => {
       discoveryService.getModelsForAgent.mockResolvedValue([
         {
           id: 'claude-sonnet-4-20250514',
           provider: 'anthropic',
-          authType: 'api_key',
+          authType: 'subscription',
           displayName: 'Claude Sonnet 4',
           contextWindow: 200000,
           inputPricePerToken: 0,
@@ -1123,7 +1097,7 @@ describe('ResolveService', () => {
       ]);
       providerKeyService.getDefaultKeyLabel.mockResolvedValue('My Anthropic Key');
 
-      const result = await svc.resolveForModel('agent-1', 'claude-sonnet-4-20250514');
+      const result = await svc.resolveForModel('agent-1', 'claude/claude-sonnet-4-20250514');
 
       expect(result.route).toEqual(
         expect.objectContaining({
@@ -1132,6 +1106,232 @@ describe('ResolveService', () => {
           keyLabel: 'My Anthropic Key',
         }),
       );
+    });
+
+    // ── provider/model explicit routing ──
+
+    it('resolves openai/gpt-5.4 to OpenAI api_key provider', async () => {
+      discoveryService.getModelsForAgent.mockResolvedValue([
+        {
+          id: 'gpt-5.4',
+          provider: 'openai',
+          authType: 'api_key',
+          displayName: 'GPT-5.4',
+          contextWindow: 272000,
+          inputPricePerToken: 0,
+          outputPricePerToken: 0,
+          capabilityReasoning: true,
+          capabilityCode: true,
+          qualityScore: 3,
+          inputModalities: ['text'],
+          outputModalities: ['text'],
+          capabilities: ['text', 'tools', 'stream'],
+        } as never,
+      ]);
+
+      const result = await svc.resolveForModel('agent-1', 'openai/gpt-5.4');
+
+      expect(result.route).toEqual(route('openai', 'api_key', 'gpt-5.4'));
+      expect(result.reason).toBe('explicit-model');
+    });
+
+    it('resolves chatgpt/gpt-5.5 to OpenAI subscription provider', async () => {
+      discoveryService.getModelsForAgent.mockResolvedValue([
+        {
+          id: 'gpt-5.5',
+          provider: 'openai',
+          authType: 'subscription',
+          displayName: 'GPT-5.5',
+          contextWindow: 200000,
+          inputPricePerToken: 0,
+          outputPricePerToken: 0,
+          capabilityReasoning: true,
+          capabilityCode: true,
+          qualityScore: 3,
+          inputModalities: ['text'],
+          outputModalities: ['text'],
+          capabilities: ['text', 'tools', 'stream'],
+        } as never,
+      ]);
+
+      const result = await svc.resolveForModel('agent-1', 'chatgpt/gpt-5.5');
+
+      expect(result.route).toEqual(route('openai', 'subscription', 'gpt-5.5'));
+      expect(result.reason).toBe('explicit-model');
+    });
+
+    it('resolves commandcode/claude-sonnet-4 to Command Code api_key', async () => {
+      discoveryService.getModelsForAgent.mockResolvedValue([
+        {
+          id: 'claude-sonnet-4',
+          provider: 'commandcode',
+          authType: 'api_key',
+          displayName: 'Claude Sonnet 4',
+          contextWindow: 200000,
+          inputPricePerToken: 0,
+          outputPricePerToken: 0,
+          capabilityReasoning: true,
+          capabilityCode: true,
+          qualityScore: 3,
+          inputModalities: ['text'],
+          outputModalities: ['text'],
+          capabilities: ['text', 'tools', 'stream'],
+        } as never,
+      ]);
+
+      const result = await svc.resolveForModel('agent-1', 'commandcode/claude-sonnet-4');
+
+      expect(result.route).toEqual(route('commandcode', 'api_key', 'claude-sonnet-4'));
+      expect(result.reason).toBe('explicit-model');
+    });
+
+    it('resolves xiaomi/mimo-v2.5-pro to Xiaomi subscription', async () => {
+      discoveryService.getModelsForAgent.mockResolvedValue([
+        {
+          id: 'mimo-v2.5-pro',
+          provider: 'xiaomi',
+          authType: 'subscription',
+          displayName: 'MiMo V2.5 Pro',
+          contextWindow: 1048576,
+          inputPricePerToken: 0,
+          outputPricePerToken: 0,
+          capabilityReasoning: true,
+          capabilityCode: true,
+          qualityScore: 3,
+          inputModalities: ['text'],
+          outputModalities: ['text'],
+          capabilities: ['text', 'tools', 'stream'],
+        } as never,
+      ]);
+
+      const result = await svc.resolveForModel('agent-1', 'xiaomi/mimo-v2.5-pro');
+
+      expect(result.route).toEqual(route('xiaomi', 'subscription', 'mimo-v2.5-pro'));
+      expect(result.reason).toBe('explicit-model');
+    });
+
+    it('resolves claude/claude-opus-4 to Anthropic subscription', async () => {
+      discoveryService.getModelsForAgent.mockResolvedValue([
+        {
+          id: 'claude-opus-4',
+          provider: 'anthropic',
+          authType: 'subscription',
+          displayName: 'Claude Opus 4',
+          contextWindow: 200000,
+          inputPricePerToken: 0,
+          outputPricePerToken: 0,
+          capabilityReasoning: true,
+          capabilityCode: true,
+          qualityScore: 3,
+          inputModalities: ['text'],
+          outputModalities: ['text'],
+          capabilities: ['text', 'tools', 'stream'],
+        } as never,
+      ]);
+
+      const result = await svc.resolveForModel('agent-1', 'claude/claude-opus-4');
+
+      expect(result.route).toEqual(route('anthropic', 'subscription', 'claude-opus-4'));
+      expect(result.reason).toBe('explicit-model');
+    });
+
+    it('returns null route for unknown provider prefix', async () => {
+      discoveryService.getModelsForAgent.mockResolvedValue([]);
+
+      const result = await svc.resolveForModel('agent-1', 'unknownprefix/model');
+
+      expect(result.route).toBeNull();
+      expect(result.reason).toBe('explicit-model');
+    });
+
+    it('returns null route for bare model names and requires provider/model syntax', async () => {
+      discoveryService.getModelsForAgent.mockResolvedValue([
+        {
+          id: 'gpt-5.4',
+          provider: 'openai',
+          authType: 'api_key',
+          displayName: 'GPT-5.4',
+          contextWindow: 272000,
+          inputPricePerToken: 0,
+          outputPricePerToken: 0,
+          capabilityReasoning: true,
+          capabilityCode: true,
+          qualityScore: 3,
+          inputModalities: ['text'],
+          outputModalities: ['text'],
+          capabilities: ['text', 'tools', 'stream'],
+        } as never,
+      ]);
+
+      const result = await svc.resolveForModel('agent-1', 'gpt-5.4');
+
+      expect(result.route).toBeNull();
+      expect(result.reason).toBe('explicit-model');
+    });
+
+    it('returns null route when model not found on specified provider', async () => {
+      discoveryService.getModelsForAgent.mockResolvedValue([
+        {
+          id: 'gpt-5.4',
+          provider: 'openai',
+          authType: 'api_key',
+          displayName: 'GPT-5.4',
+          contextWindow: 272000,
+          inputPricePerToken: 0,
+          outputPricePerToken: 0,
+          capabilityReasoning: true,
+          capabilityCode: true,
+          qualityScore: 3,
+          inputModalities: ['text'],
+          outputModalities: ['text'],
+          capabilities: ['text', 'tools', 'stream'],
+        } as never,
+      ]);
+
+      const result = await svc.resolveForModel('agent-1', 'openai/nonexistent-model');
+
+      expect(result.route).toBeNull();
+      expect(result.reason).toBe('explicit-model');
+    });
+
+    it('prefers subscription auth when both exist and no hint is set', async () => {
+      discoveryService.getModelsForAgent.mockResolvedValue([
+        {
+          id: 'gpt-5.4',
+          provider: 'openai',
+          authType: 'api_key',
+          displayName: 'GPT-5.4',
+          contextWindow: 272000,
+          inputPricePerToken: 0,
+          outputPricePerToken: 0,
+          capabilityReasoning: true,
+          capabilityCode: true,
+          qualityScore: 3,
+          inputModalities: ['text'],
+          outputModalities: ['text'],
+          capabilities: ['text', 'tools', 'stream'],
+        } as never,
+        {
+          id: 'gpt-5.4',
+          provider: 'openai',
+          authType: 'subscription',
+          displayName: 'GPT-5.4',
+          contextWindow: 200000,
+          inputPricePerToken: 0,
+          outputPricePerToken: 0,
+          capabilityReasoning: true,
+          capabilityCode: true,
+          qualityScore: 3,
+          inputModalities: ['text'],
+          outputModalities: ['text'],
+          capabilities: ['text', 'tools', 'stream'],
+        } as never,
+      ]);
+
+      const result = await svc.resolveForModel('agent-1', 'openai/gpt-5.4');
+
+      // openai prefix has no authType hint, so subscription is preferred
+      expect(result.route).toEqual(route('openai', 'subscription', 'gpt-5.4'));
     });
   });
 });

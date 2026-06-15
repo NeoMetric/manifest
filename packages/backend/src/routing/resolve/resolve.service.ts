@@ -20,7 +20,11 @@ import { scoreRequest, ScorerInput, MomentumInput, scanMessages } from '../../sc
 import { ResolveResponse } from '../dto/resolve-response';
 import { inferProviderFromModelName } from '../../common/utils/provider-aliases';
 import { Agent } from '../../entities/agent.entity';
-import { DEFAULT_RESPONSE_MODE, DEFAULT_OUTPUT_MODALITY } from 'manifest-shared';
+import {
+  DEFAULT_RESPONSE_MODE,
+  DEFAULT_OUTPUT_MODALITY,
+  resolveRoutingPrefix,
+} from 'manifest-shared';
 import type {
   AuthType,
   ModelRoute,
@@ -170,16 +174,73 @@ export class ResolveService {
   }
 
   async resolveForModel(agentId: string, model: string): Promise<ResolveResponse> {
-    const allModels = await this.discoveryService.getModelsForAgent(agentId);
-    const match = allModels.find((m) => m.id === model);
+    const slashIdx = model.indexOf('/');
 
-    if (!match) {
-      this.logger.warn(
-        `Explicit model "${model}" not found in discovered models for agent=${agentId}`,
+    // ── provider/model explicit routing ──
+    if (slashIdx > 0) {
+      const prefix = model.substring(0, slashIdx).toLowerCase();
+      const bareModel = model.substring(slashIdx + 1);
+
+      const prefixEntry = resolveRoutingPrefix(prefix);
+      if (!prefixEntry) {
+        this.logger.warn(
+          `Unknown provider prefix "${prefix}" in explicit model "${model}" for agent=${agentId}`,
+        );
+        return {
+          tier: 'default',
+          route: null,
+          fallback_routes: null,
+          output_modality: DEFAULT_OUTPUT_MODALITY,
+          response_mode: DEFAULT_RESPONSE_MODE,
+          confidence: 1,
+          score: 0,
+          reason: 'explicit-model',
+        };
+      }
+
+      const canonicalProvider = prefixEntry.providerId;
+      const authTypeHint = prefixEntry.authType;
+
+      const allModels = await this.discoveryService.getModelsForAgent(agentId);
+      let matches = allModels.filter(
+        (m) => m.provider.toLowerCase() === canonicalProvider.toLowerCase() && m.id === bareModel,
       );
+
+      // If an auth-type hint is set (e.g. chatgpt → subscription), narrow to
+      // that auth type. If not, prefer subscription when available, else first.
+      if (authTypeHint) {
+        matches = matches.filter((m) => m.authType === authTypeHint);
+      }
+
+      if (matches.length === 0) {
+        this.logger.warn(
+          `Model "${bareModel}" not found on provider "${canonicalProvider}" (prefix="${prefix}") for agent=${agentId}`,
+        );
+        return {
+          tier: 'default',
+          route: null,
+          fallback_routes: null,
+          output_modality: DEFAULT_OUTPUT_MODALITY,
+          response_mode: DEFAULT_RESPONSE_MODE,
+          confidence: 1,
+          score: 0,
+          reason: 'explicit-model',
+        };
+      }
+
+      // Pick the best match: subscription if available, else first.
+      const match = matches.find((m) => m.authType === 'subscription') ?? matches[0];
+
+      const baseRoute: ModelRoute = {
+        provider: canonicalProvider,
+        authType: match.authType as AuthType,
+        model: bareModel,
+      };
+      const route = await this.enrichRouteKeyLabel(agentId, baseRoute);
+
       return {
         tier: 'default',
-        route: null,
+        route,
         fallback_routes: null,
         output_modality: DEFAULT_OUTPUT_MODALITY,
         response_mode: DEFAULT_RESPONSE_MODE,
@@ -189,14 +250,13 @@ export class ResolveService {
       };
     }
 
-    const provider = match.provider;
-    const authType = await this.providerKeyService.getAuthType(agentId, provider);
-    const baseRoute: ModelRoute = { provider, authType, model };
-    const route = await this.enrichRouteKeyLabel(agentId, baseRoute);
+    this.logger.warn(
+      `Explicit model "${model}" requires a provider prefix (provider/model) for agent=${agentId}`,
+    );
 
     return {
       tier: 'default',
-      route,
+      route: null,
       fallback_routes: null,
       output_modality: DEFAULT_OUTPUT_MODALITY,
       response_mode: DEFAULT_RESPONSE_MODE,
