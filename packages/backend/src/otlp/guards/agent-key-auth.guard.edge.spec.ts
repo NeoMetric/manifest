@@ -273,6 +273,7 @@ describe('AgentKeyAuthGuard edge cases', () => {
         agentId: 'first-agent',
         agentName: 'first-agent-name',
         userId: 'first-user',
+        apiKeyId: 'first-key',
       });
       expect(mockGetOne).toHaveBeenCalledTimes(1);
       expect(mockFindOne).toHaveBeenCalledTimes(1);

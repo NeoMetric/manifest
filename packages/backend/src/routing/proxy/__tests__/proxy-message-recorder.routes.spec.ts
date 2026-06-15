@@ -19,6 +19,7 @@ const ctx: IngestionContext = {
   agentId: 'agent-1',
   agentName: 'test-agent',
   userId: 'user-1',
+  apiKeyId: 'test-key-id',
 };
 
 describe('ProxyMessageRecorder.recordFailedFallbacks — per-failure auth_type', () => {

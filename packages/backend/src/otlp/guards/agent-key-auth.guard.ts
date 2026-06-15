@@ -198,6 +198,7 @@ export class AgentKeyAuthGuard implements CanActivate, OnModuleInit, OnModuleDes
         agentId: cached.agentId,
         agentName: cached.agentName,
         userId: cached.userId,
+        apiKeyId: cached.apiKeyId,
       });
       return true;
     }

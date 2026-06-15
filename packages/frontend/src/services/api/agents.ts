@@ -34,6 +34,49 @@ export function rotateAgentKey(agentName: string) {
   });
 }
 
+export interface AgentKey {
+  id: string;
+  label: string | null;
+  keyPrefix: string;
+  isActive: boolean;
+  lastUsedAt: string | null;
+  createdAt: string;
+}
+
+export function listAgentKeys(agentName: string): Promise<{ keys: AgentKey[] }> {
+  return fetchJson<{ keys: AgentKey[] }>(
+    `/agents/${encodeURIComponent(agentName)}/keys`,
+  );
+}
+
+export function createAgentKey(agentName: string, label?: string) {
+  return fetchMutate<{ id: string; apiKey: string; keyPrefix: string }>(
+    `/agents/${encodeURIComponent(agentName)}/keys`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ label }),
+    },
+  );
+}
+
+export function deleteAgentKey(agentName: string, keyId: string) {
+  return fetchMutate<void>(`/agents/${encodeURIComponent(agentName)}/keys/${encodeURIComponent(keyId)}`, {
+    method: 'DELETE',
+  });
+}
+
+export function renameAgentKey(agentName: string, keyId: string, label: string) {
+  return fetchMutate<{ ok: boolean }>(
+    `/agents/${encodeURIComponent(agentName)}/keys/${encodeURIComponent(keyId)}`,
+    {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ label }),
+    },
+  );
+}
+
 export function updateAgent(
   currentName: string,
   fields: {

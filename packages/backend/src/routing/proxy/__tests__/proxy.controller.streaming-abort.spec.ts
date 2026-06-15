@@ -53,6 +53,7 @@ function mockRequest(
       tenantId: 'tenant-1',
       agentId: 'agent-1',
       agentName: 'test-agent',
+      apiKeyId: 'test-key-id',
     },
     body,
     headers,

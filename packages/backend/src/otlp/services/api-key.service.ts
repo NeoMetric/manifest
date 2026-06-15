@@ -105,6 +105,7 @@ export class ApiKeyGeneratorService {
       .andWhere('a.name = :agentName', { agentName })
       .andWhere('a.deleted_at IS NULL')
       .andWhere('k.is_active = true')
+      .orderBy('k.created_at', 'ASC')
       .getOne();
 
     if (!keyRecord) {
@@ -132,7 +133,9 @@ export class ApiKeyGeneratorService {
       .getOne();
     if (!agent) throw new NotFoundException('Agent not found or access denied');
 
-    await this.keyRepo.delete({ agent_id: agent.id });
+    // Deactivate (not delete) all existing keys so historical messages
+    // retain their api_key_id references for attribution.
+    await this.keyRepo.update({ agent_id: agent.id }, { is_active: false });
     this.otlpAuthGuard.clearCache();
 
     const rawKey = this.generateKey();

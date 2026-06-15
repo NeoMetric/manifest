@@ -1,6 +1,6 @@
 import { Meta, Title } from '@solidjs/meta';
 import { useLocation, useNavigate, useParams } from '@solidjs/router';
-import { createResource, createSignal, ErrorBoundary, Show, type Component } from 'solid-js';
+import { createEffect, createResource, createSignal, ErrorBoundary, For, Show, type Component } from 'solid-js';
 import CopyButton from '../components/CopyButton.jsx';
 import ErrorState from '../components/ErrorState.jsx';
 import AgentTypeGrid from '../components/AgentTypeGrid.jsx';
@@ -12,9 +12,14 @@ import {
   deleteAgent,
   getAgentInfo,
   getAgentKey,
+  listAgentKeys,
+  createAgentKey,
+  deleteAgentKey,
+  renameAgentKey,
   renameAgent,
   rotateAgentKey,
   updateAgent,
+  type AgentKey,
 } from '../services/api.js';
 import { markAgentCreated } from '../services/recent-agents.js';
 import { toast } from '../services/toast-store.js';
@@ -51,6 +56,16 @@ const Settings: Component = () => {
 
   const [agentInfo, { refetch: refetchInfo }] = createResource(() => agentName(), getAgentInfo);
   const [apiKeyData, { refetch: refetchKey }] = createResource(() => agentName(), getAgentKey);
+  const [keys, { refetch: refetchKeys }] = createResource(() => agentName(), listAgentKeys);
+
+  // Multi-key management state
+  const [newKeyLabel, setNewKeyLabel] = createSignal('');
+  const [creatingKey, setCreatingKey] = createSignal(false);
+  const [newlyCreatedKey, setNewlyCreatedKey] = createSignal<string | null>(null);
+  const [revealedKeyId, setRevealedKeyId] = createSignal<string | null>(null);
+  const [editingKeyId, setEditingKeyId] = createSignal<string | null>(null);
+  const [editingLabel, setEditingLabel] = createSignal('');
+  const [deletingKeyId, setDeletingKeyId] = createSignal<string | null>(null);
 
   const currentCategory = () => (agentInfo()?.agent_category as AgentCategory) ?? null;
   const currentPlatform = () => (agentInfo()?.agent_platform as AgentPlatform) ?? null;
@@ -134,12 +149,59 @@ const Settings: Component = () => {
       setKeyRevealed(true);
       toast.success('API key rotated successfully');
       refetchKey();
+      refetchKeys();
     } catch {
       // error toast handled by fetchMutate
     } finally {
       setRotating(false);
     }
   };
+
+  // Multi-key handlers
+  const handleCreateKey = async () => {
+    if (creatingKey()) return;
+    const label = newKeyLabel().trim() || undefined;
+    setCreatingKey(true);
+    try {
+      const result = await createAgentKey(agentName(), label);
+      setNewlyCreatedKey(result.apiKey);
+      setNewKeyLabel('');
+      toast.success('New API key created');
+      refetchKeys();
+    } catch {
+      // error toast handled by fetchMutate
+    } finally {
+      setCreatingKey(false);
+    }
+  };
+
+  const handleDeleteKey = async (keyId: string) => {
+    try {
+      await deleteAgentKey(agentName(), keyId);
+      toast.success('API key revoked');
+      setDeletingKeyId(null);
+      setRevealedKeyId(null);
+      refetchKeys();
+    } catch {
+      // error toast handled by fetchMutate
+    }
+  };
+
+  const handleRenameKey = async (keyId: string) => {
+    const label = editingLabel().trim();
+    if (!label) return;
+    try {
+      await renameAgentKey(agentName(), keyId, label);
+      toast.success('Key label updated');
+      setEditingKeyId(null);
+      refetchKeys();
+    } catch {
+      // error toast handled by fetchMutate
+    }
+  };
+
+  const activeKeys = () => keys()?.keys?.filter((k) => k.isActive) ?? [];
+  const inactiveKeys = () => keys()?.keys?.filter((k) => !k.isActive) ?? [];
 
   return (
     <div class="container--sm">
@@ -240,7 +302,7 @@ const Settings: Component = () => {
           />
         )}
       >
-        <h2 class="settings-section__title">API Key</h2>
+        <h2 class="settings-section__title">API Keys</h2>
         <div class="settings-card">
           <div class="settings-card__body">
             <span class="settings-card__label-title">Harness API key</span>
@@ -248,49 +310,139 @@ const Settings: Component = () => {
               This key authenticates your harness's requests to Manifest. Rotating it generates a
               new key and immediately invalidates the current one.
             </span>
-            <div class="settings-card__key-row">
-              <code class="settings-card__key-value">{displayedKey()}</code>
-              <div class="settings-card__key-actions">
-                <Show when={fullKey()}>
-                  <button
-                    class="btn btn--ghost btn--sm"
-                    onClick={() => setKeyRevealed(!keyRevealed())}
-                    aria-label={keyRevealed() ? 'Hide API key' : 'Reveal API key'}
-                    title={keyRevealed() ? 'Hide' : 'Reveal'}
-                  >
-                    <svg
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      aria-hidden="true"
-                    >
-                      <Show
-                        when={keyRevealed()}
-                        fallback={
-                          <>
-                            <path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0" />
-                            <circle cx="12" cy="12" r="3" />
-                          </>
-                        }
-                      >
-                        <path d="M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49" />
-                        <path d="M14.084 14.158a3 3 0 0 1-4.242-4.242" />
-                        <path d="M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143" />
-                        <path d="m2 2 20 20" />
-                      </Show>
-                    </svg>
-                  </button>
-                </Show>
-                <Show when={fullKey()}>
-                  <CopyButton text={fullKey()!} />
-                </Show>
-              </div>
+
+            {/* Create new key */}
+            <div style="display: flex; gap: 8px; margin-bottom: var(--gap-md);">
+              <input
+                class="settings-card__input"
+                type="text"
+                placeholder="Key label (optional)"
+                aria-label="New key label"
+                value={newKeyLabel()}
+                onInput={(e) => setNewKeyLabel(e.currentTarget.value)}
+                style="flex: 1;"
+              />
+              <button
+                class="btn btn--primary btn--sm"
+                onClick={handleCreateKey}
+                disabled={creatingKey()}
+              >
+                {creatingKey() ? <span class="spinner" /> : 'Create key'}
+              </button>
             </div>
+
+            {/* Show newly created key */}
+            <Show when={newlyCreatedKey()}>
+              <div style="background: hsl(var(--chart-2) / 0.1); border: 1px solid hsl(var(--chart-2) / 0.3); border-radius: var(--radius); padding: 10px 14px; margin-bottom: var(--gap-md); font-size: var(--font-size-sm);">
+                <strong>New key created.</strong> Copy it now — it won't be shown again.
+                <div style="display: flex; align-items: center; gap: 8px; margin-top: 8px;">
+                  <code style="font-size: 12px; word-break: break-all; flex: 1;">{newlyCreatedKey()}</code>
+                  <CopyButton text={newlyCreatedKey()!} />
+                </div>
+              </div>
+            </Show>
+
+            {/* Active keys list */}
+            <Show when={!keys.loading} fallback={<div class="skeleton skeleton--rect" style="width: 100%; height: 80px;" />}>
+              <Show when={activeKeys().length > 0}>
+                <div style="font-size: 12px; font-weight: 600; color: hsl(var(--muted-foreground)); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.05em;">
+                  Active keys ({activeKeys().length})
+                </div>
+                <For each={activeKeys()}>
+                  {(key) => (
+                    <div style="display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid hsl(var(--border));">
+                      <div style="flex: 1; min-width: 0;">
+                        <Show
+                          when={editingKeyId() === key.id}
+                          fallback={
+                            <div style="display: flex; align-items: center; gap: 6px;">
+                              <span style="font-size: 13px; font-weight: 500;">
+                                {key.label ?? 'Unnamed key'}
+                              </span>
+                              <span style="font-size: 11px; color: hsl(var(--muted-foreground));">
+                                ({key.keyPrefix}...)
+                              </span>
+                              <Show when={key.lastUsedAt}>
+                                <span style="font-size: 11px; color: hsl(var(--muted-foreground));">
+                                  · Last used {new Date(key.lastUsedAt!).toLocaleDateString()}
+                                </span>
+                              </Show>
+                            </div>
+                          }
+                        >
+                          <div style="display: flex; gap: 4px;">
+                            <input
+                              class="settings-card__input"
+                              type="text"
+                              value={editingLabel()}
+                              onInput={(e) => setEditingLabel(e.currentTarget.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') handleRenameKey(key.id);
+                                if (e.key === 'Escape') setEditingKeyId(null);
+                              }}
+                              style="font-size: 13px; flex: 1;"
+                              autoFocus
+                            />
+                            <button
+                              class="btn btn--ghost btn--sm"
+                              onClick={() => handleRenameKey(key.id)}
+                              title="Save"
+                            >✓</button>
+                            <button
+                              class="btn btn--ghost btn--sm"
+                              onClick={() => setEditingKeyId(null)}
+                              title="Cancel"
+                            >✕</button>
+                          </div>
+                        </Show>
+                      </div>
+                      <div style="display: flex; gap: 2px; flex-shrink: 0;">
+                        <Show when={editingKeyId() !== key.id}>
+                          <button
+                            class="btn btn--ghost btn--sm"
+                            onClick={() => {
+                              setEditingKeyId(key.id);
+                              setEditingLabel(key.label ?? '');
+                            }}
+                            title="Rename"
+                          >✎</button>
+                          <button
+                            class="btn btn--ghost btn--sm"
+                            onClick={() => setDeletingKeyId(key.id)}
+                            title="Revoke key"
+                            style="color: hsl(var(--destructive));"
+                          >✕</button>
+                        </Show>
+                      </div>
+                    </div>
+                  )}
+                </For>
+              </Show>
+
+              {/* Inactive (revoked) keys */}
+              <Show when={inactiveKeys().length > 0}>
+                <div style="font-size: 12px; font-weight: 600; color: hsl(var(--muted-foreground)); margin-top: var(--gap-md); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.05em;">
+                  Revoked keys ({inactiveKeys().length})
+                </div>
+                <For each={inactiveKeys()}>
+                  {(key) => (
+                    <div style="display: flex; align-items: center; gap: 8px; padding: 6px 0; opacity: 0.5;">
+                      <div style="flex: 1; min-width: 0;">
+                        <span style="font-size: 13px;">{key.label ?? 'Unnamed key'}</span>
+                        <span style="font-size: 11px; color: hsl(var(--muted-foreground));"> ({key.keyPrefix}...)</span>
+                      </div>
+                      <span style="font-size: 11px; color: hsl(var(--muted-foreground));">Revoked</span>
+                    </div>
+                  )}
+                </For>
+              </Show>
+
+              <Show when={activeKeys().length === 0 && inactiveKeys().length === 0}>
+                <div style="font-size: 13px; color: hsl(var(--muted-foreground)); padding: 8px 0;">
+                  No keys found. Create one above.
+                </div>
+              </Show>
+            </Show>
           </div>
           <div class="settings-card__footer">
             <button class="btn btn--outline btn--sm" onClick={handleRotate} disabled={rotating()}>
@@ -300,11 +452,34 @@ const Settings: Component = () => {
                   <span class="sr-only">Rotating...</span>
                 </>
               ) : (
-                'Rotate key'
+                'Rotate all keys'
               )}
             </button>
           </div>
         </div>
+
+        {/* Delete key confirmation dialog */}
+        <Show when={deletingKeyId()}>
+          <div style="background: hsl(var(--destructive) / 0.05); border: 1px solid hsl(var(--destructive) / 0.2); border-radius: var(--radius); padding: 12px 14px; margin-bottom: var(--gap-md);">
+            <span style="font-size: 13px; display: block; margin-bottom: 8px;">
+              Are you sure you want to revoke this key? Requests using it will be rejected.
+            </span>
+            <div style="display: flex; gap: 8px;">
+              <button
+                class="btn btn--danger btn--sm"
+                onClick={() => handleDeleteKey(deletingKeyId()!)}
+              >
+                Revoke key
+              </button>
+              <button
+                class="btn btn--outline btn--sm"
+                onClick={() => setDeletingKeyId(null)}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </Show>
 
         {/* -- Setup Instructions ---------------------- */}
         <h2 class="settings-section__title">Setup</h2>
@@ -314,7 +489,7 @@ const Settings: Component = () => {
         >
           <Show when={apiKeyData.error}>
             <div style="background: hsl(var(--chart-5) / 0.1); border: 1px solid hsl(var(--chart-5) / 0.3); border-radius: var(--radius); padding: 10px 14px; margin-bottom: var(--gap-md); font-size: var(--font-size-sm);">
-              Could not load your API key. Use <strong>Rotate key</strong> above to generate a new
+              Could not load your API key. Use <strong>Rotate all keys</strong> above to generate a new
               one.
             </div>
           </Show>

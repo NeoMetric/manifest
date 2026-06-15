@@ -938,6 +938,35 @@ describe('MessagesQueryService', () => {
     expect(headerTierCall?.[1]).toEqual({ headerTierFilter: 'ht-premium' });
   });
 
+  it('passes api_key_id filter through to the query builder', async () => {
+    mockGetRawOne.mockResolvedValueOnce({ total: 1 });
+    mockGetRawMany
+      .mockResolvedValueOnce([
+        { id: 'msg-1', timestamp: '2026-04-24 10:00:00', model: 'gpt-4o-mini', cost: 0 },
+      ])
+      .mockResolvedValueOnce([{ model: 'gpt-4o-mini' }]);
+
+    const mockQb = (
+      service as unknown as { turnRepo: { createQueryBuilder: jest.Mock } }
+    ).turnRepo.createQueryBuilder();
+    const andWhereSpy = mockQb.andWhere as jest.Mock;
+    andWhereSpy.mockClear();
+
+    const result = await service.getMessages({
+      range: '24h',
+      userId: 'test-user',
+      limit: 20,
+      api_key_id: 'key-123',
+    });
+
+    expect(result.total_count).toBe(1);
+    const apiKeyCall = andWhereSpy.mock.calls.find(
+      ([clause]) => typeof clause === 'string' && clause.includes('api_key_id'),
+    );
+    expect(apiKeyCall).toBeDefined();
+    expect(apiKeyCall?.[1]).toEqual({ apiKeyFilter: 'key-123' });
+  });
+
   it('different routing_tier values produce different count cache keys', async () => {
     mockGetRawOne.mockResolvedValueOnce({ total: 3 });
     mockGetRawMany

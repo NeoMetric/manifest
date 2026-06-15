@@ -70,6 +70,7 @@ function mockRequest(
       tenantId,
       agentId: 'agent-1',
       agentName: 'test-agent',
+      apiKeyId: 'test-key-id',
     },
     body,
     headers,
@@ -747,6 +748,7 @@ describe('ProxyController', () => {
       tenantId: 'tenant-1',
       agentId: 'agent-1',
       agentName: 'test-agent',
+      apiKeyId: 'test-key-id',
     };
     const usage = {
       prompt_tokens: 500,
@@ -2281,6 +2283,7 @@ describe('ProxyController', () => {
           tenantId: 'tenant-1',
           agentId: 'agent-2',
           agentName: 'other-agent',
+          apiKeyId: 'test-key-id',
         },
         body: { messages: [{ role: 'user', content: 'b' }] },
         headers: {},

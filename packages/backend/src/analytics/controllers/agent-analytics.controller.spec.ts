@@ -14,6 +14,7 @@ describe('AgentAnalyticsController', () => {
     agentId: 'a1',
     agentName: 'test-agent',
     userId: 'user-1',
+    apiKeyId: 'test-key-id',
   };
   const mockReq = { ingestionContext } as never;
 

@@ -13,6 +13,7 @@ const ingestionContext: IngestionContext = {
   agentId: 'agent-1',
   agentName: 'test-agent',
   userId: 'user-1',
+  apiKeyId: 'test-key-id',
 };
 
 function mockReq(overrides: Partial<IngestionContext> = {}): ReqWithCtx {

@@ -353,6 +353,7 @@ export class ProxyMessageRecorder implements OnModuleDestroy {
         header_tier_id: headerTierId ?? null,
         header_tier_name: headerTierName ?? null,
         header_tier_color: headerTierColor ?? null,
+        api_key_id: ctx.apiKeyId,
       }),
     );
     this.eventBus.emit(ctx.tenantId, 'message', ctx.userId);

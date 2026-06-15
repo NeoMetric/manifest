@@ -283,6 +283,12 @@ export class MessagesQueryService {
       });
     }
 
+    if (params.api_key_id) {
+      qb.andWhere('at.api_key_id = :apiKeyFilter', {
+        apiKeyFilter: params.api_key_id,
+      });
+    }
+
     if (params.provider) {
       await this.applyProviderFilter(qb, params.provider, {
         tenantId: params.tenantId,

@@ -25,6 +25,7 @@ import {
   getMessages,
   getMessageFilterOptions,
   getRoutingStatus,
+  listAgentKeys,
   listHeaderTiers,
 } from '../services/api.js';
 import { createCursorPagination } from '../services/cursor-pagination.js';
@@ -177,6 +178,11 @@ const MessageLog: Component = () => {
   const [headerTiers] = createResource(
     () => ({ agentName: tierMetadataAgentName() }),
     ({ agentName }) => (agentName ? listHeaderTiers(agentName) : Promise.resolve([])),
+  );
+
+  const [agentKeys] = createResource(
+    () => params.agentName,
+    (name) => listAgentKeys(decodeURIComponent(name)),
   );
 
   const hasProviders = () => routingStatus()?.enabled === true;
@@ -460,6 +466,13 @@ const MessageLog: Component = () => {
               label="Origin filter"
             />
             <Select value={tierFilter()} onChange={setTierFilter} options={tierOptions()} />
+            <Show when={(agentKeys()?.keys?.length ?? 0) > 1}>
+              <Select
+                value={apiKeyFilter()}
+                onChange={setApiKeyFilter}
+                options={apiKeyOptions()}
+              />
+            </Show>
             <div class="cost-range-filter">
               <input
                 type="number"

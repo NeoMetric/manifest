@@ -1,4 +1,4 @@
-import { Entity, Column, PrimaryColumn, ManyToOne, OneToOne, JoinColumn, Index } from 'typeorm';
+import { Entity, Column, PrimaryColumn, ManyToOne, JoinColumn, Index } from 'typeorm';
 import { Tenant } from './tenant.entity';
 import { Agent } from './agent.entity';
 import { timestampType, timestampDefault } from '../common/utils/postgres-sql';
@@ -28,7 +28,7 @@ export class AgentApiKey {
   @Column('varchar')
   tenant_id!: string;
 
-  @OneToOne(() => Agent, (a) => a.apiKey, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Agent, (a) => a.apiKeys, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'agent_id' })
   agent!: Agent;
 

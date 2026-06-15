@@ -193,6 +193,7 @@ describe('AgentKeyAuthGuard', () => {
       agentId: 'agent-1',
       agentName: 'test-agent',
       userId: 'user-1',
+      apiKeyId: 'key-1',
     });
   });
 
@@ -219,6 +220,7 @@ describe('AgentKeyAuthGuard', () => {
       agentId: 'agent-2',
       agentName: 'test-agent-2',
       userId: 'user-2',
+      apiKeyId: 'key-2',
     });
   });
 
@@ -375,6 +377,7 @@ describe('AgentKeyAuthGuard', () => {
         agentId: 'dev-agent',
         agentName: 'demo-agent',
         userId: 'dev-user',
+        apiKeyId: 'dev-key',
       });
       expect(mockFindOne).toHaveBeenCalledWith({
         where: { is_active: true },
@@ -398,6 +401,7 @@ describe('AgentKeyAuthGuard', () => {
         agentId: 'dev-agent',
         agentName: 'demo-agent',
         userId: 'dev-user',
+        apiKeyId: 'dev-key',
       });
     });
 
@@ -494,6 +498,7 @@ describe('AgentKeyAuthGuard', () => {
         agentId: 'a',
         agentName: 'n',
         userId: 'u',
+        apiKeyId: 'filler',
         expiresAt: Date.now() + 999_999,
       });
     }
@@ -530,6 +535,7 @@ describe('AgentKeyAuthGuard', () => {
       agentId: 'a',
       agentName: 'n',
       userId: 'u',
+      apiKeyId: 'expired',
       expiresAt: Date.now() - 1000,
     });
     internalCache.set(validHash, {
@@ -537,6 +543,7 @@ describe('AgentKeyAuthGuard', () => {
       agentId: 'a2',
       agentName: 'n2',
       userId: 'u2',
+      apiKeyId: 'valid',
       expiresAt: Date.now() + 999_999,
     });
 
@@ -575,6 +582,7 @@ describe('AgentKeyAuthGuard', () => {
       agentId: 'a',
       agentName: 'n',
       userId: 'u',
+      apiKeyId: 'stale',
       expiresAt: Date.now() - 1000,
     });
 
@@ -600,6 +608,7 @@ describe('AgentKeyAuthGuard', () => {
       agentId: 'a',
       agentName: 'n',
       userId: 'u',
+      apiKeyId: 'leftover',
       expiresAt: Date.now() - 1000,
     });
 
@@ -680,6 +689,7 @@ describe('AgentKeyAuthGuard', () => {
       agentId: 'a',
       agentName: 'n',
       userId: 'u',
+      apiKeyId: 'other',
       expiresAt: Date.now() + 999_999,
     });
 

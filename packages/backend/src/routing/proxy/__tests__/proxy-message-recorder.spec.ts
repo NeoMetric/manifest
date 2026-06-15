@@ -34,6 +34,7 @@ const ctx: IngestionContext = {
   agentId: 'agent-1',
   agentName: 'test-agent',
   userId: 'user-1',
+  apiKeyId: 'test-key-id',
 };
 
 describe('ProxyMessageRecorder', () => {
@@ -1725,6 +1726,7 @@ describe('ProxyMessageRecorder', () => {
           agentId: `a-${i}`,
           agentName: 'test',
           userId: 'user-1',
+          apiKeyId: 'test-key-id',
         };
         await recorder.recordProviderError(agentCtx, 429, 'rate limited');
       }
@@ -1743,6 +1745,7 @@ describe('ProxyMessageRecorder', () => {
           agentId: 'a-overflow',
           agentName: 'test',
           userId: 'user-1',
+          apiKeyId: 'test-key-id',
         };
         await recorder.recordProviderError(overflowCtx, 429, 'rate limited');
         expect(insertMock).toHaveBeenCalledTimes(1);

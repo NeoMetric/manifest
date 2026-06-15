@@ -5,6 +5,8 @@ import {
   Controller,
   Delete,
   Get,
+  HttpCode,
+  HttpStatus,
   Inject,
   Logger,
   NotFoundException,
@@ -224,6 +226,47 @@ export class AgentsController {
     if (!info || !ctx.tenantId) throw new NotFoundException(`Agent "${agentName}" not found`);
     const result = await this.apiKeyGenerator.rotateKey(ctx.tenantId, agentName);
     return { apiKey: result.apiKey };
+  }
+
+  @Get('agents/:agentName/keys')
+  async listAgentKeys(@CurrentUser() user: AuthUser, @Param('agentName') agentName: string) {
+    const keys = await this.apiKeyGenerator.listKeys(user.id, agentName);
+    return { keys };
+  }
+
+  @Post('agents/:agentName/keys')
+  async createAgentKey(
+    @CurrentUser() user: AuthUser,
+    @Param('agentName') agentName: string,
+    @Body() body: { label?: string },
+  ) {
+    const result = await this.apiKeyGenerator.createKey(user.id, agentName, body.label);
+    return {
+      id: result.id,
+      apiKey: result.apiKey,
+      keyPrefix: result.keyPrefix,
+    };
+  }
+
+  @Delete('agents/:agentName/keys/:keyId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deleteAgentKey(
+    @CurrentUser() user: AuthUser,
+    @Param('agentName') agentName: string,
+    @Param('keyId') keyId: string,
+  ) {
+    await this.apiKeyGenerator.deleteKey(user.id, agentName, keyId);
+  }
+
+  @Patch('agents/:agentName/keys/:keyId')
+  async renameAgentKey(
+    @CurrentUser() user: AuthUser,
+    @Param('agentName') agentName: string,
+    @Param('keyId') keyId: string,
+    @Body() body: { label: string },
+  ) {
+    await this.apiKeyGenerator.renameKey(user.id, agentName, keyId, body.label);
+    return { ok: true };
   }
 
   @Patch('agents/:agentName')

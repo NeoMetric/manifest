@@ -102,6 +102,10 @@ describe('AgentsController', () => {
             onboardAgent: jest.fn(),
             getKeyForAgent: mockGetKeyForAgent,
             rotateKey: mockRotateKey,
+            listKeys: jest.fn().mockResolvedValue({ keys: [] }),
+            createKey: jest.fn().mockResolvedValue({ id: 'new-key', apiKey: 'mnfst_new', keyPrefix: 'mnfst_' }),
+            deleteKey: jest.fn().mockResolvedValue(undefined),
+            renameKey: jest.fn().mockResolvedValue(undefined),
           },
         },
         {
@@ -293,7 +297,7 @@ describe('AgentsController', () => {
         },
         {
           provide: ApiKeyGeneratorService,
-          useValue: { onboardAgent: mockOnboard, getKeyForAgent: jest.fn(), rotateKey: jest.fn() },
+          useValue: { onboardAgent: mockOnboard, getKeyForAgent: jest.fn(), rotateKey: jest.fn(), listKeys: jest.fn().mockResolvedValue({ keys: [] }), createKey: jest.fn(), deleteKey: jest.fn(), renameKey: jest.fn() },
         },
         { provide: ConfigService, useValue: { get: jest.fn() } },
         { provide: TenantCacheService, useValue: { resolve: jest.fn().mockResolvedValue(null) } },
@@ -351,7 +355,7 @@ describe('AgentsController', () => {
         },
         {
           provide: ApiKeyGeneratorService,
-          useValue: { onboardAgent: mockOnboard, getKeyForAgent: jest.fn(), rotateKey: jest.fn() },
+          useValue: { onboardAgent: mockOnboard, getKeyForAgent: jest.fn(), rotateKey: jest.fn(), listKeys: jest.fn().mockResolvedValue({ keys: [] }), createKey: jest.fn(), deleteKey: jest.fn(), renameKey: jest.fn() },
         },
         { provide: ConfigService, useValue: { get: jest.fn() } },
         { provide: TenantCacheService, useValue: { resolve: jest.fn().mockResolvedValue(null) } },
@@ -459,7 +463,7 @@ describe('AgentsController', () => {
         },
         {
           provide: ApiKeyGeneratorService,
-          useValue: { onboardAgent: mockOnboard, getKeyForAgent: jest.fn(), rotateKey: jest.fn() },
+          useValue: { onboardAgent: mockOnboard, getKeyForAgent: jest.fn(), rotateKey: jest.fn(), listKeys: jest.fn().mockResolvedValue({ keys: [] }), createKey: jest.fn(), deleteKey: jest.fn(), renameKey: jest.fn() },
         },
         { provide: ConfigService, useValue: { get: jest.fn() } },
         { provide: TenantCacheService, useValue: { resolve: jest.fn().mockResolvedValue(null) } },
@@ -559,7 +563,7 @@ describe('AgentsController', () => {
         },
         {
           provide: ApiKeyGeneratorService,
-          useValue: { onboardAgent: mockOnboard, getKeyForAgent: jest.fn(), rotateKey: jest.fn() },
+          useValue: { onboardAgent: mockOnboard, getKeyForAgent: jest.fn(), rotateKey: jest.fn(), listKeys: jest.fn().mockResolvedValue({ keys: [] }), createKey: jest.fn(), deleteKey: jest.fn(), renameKey: jest.fn() },
         },
         { provide: ConfigService, useValue: { get: jest.fn() } },
         { provide: TenantCacheService, useValue: { resolve: jest.fn().mockResolvedValue(null) } },
@@ -599,7 +603,7 @@ describe('AgentsController', () => {
         },
         {
           provide: ApiKeyGeneratorService,
-          useValue: { onboardAgent: mockOnboard, getKeyForAgent: jest.fn(), rotateKey: jest.fn() },
+          useValue: { onboardAgent: mockOnboard, getKeyForAgent: jest.fn(), rotateKey: jest.fn(), listKeys: jest.fn().mockResolvedValue({ keys: [] }), createKey: jest.fn(), deleteKey: jest.fn(), renameKey: jest.fn() },
         },
         { provide: ConfigService, useValue: { get: jest.fn() } },
         { provide: TenantCacheService, useValue: { resolve: jest.fn().mockResolvedValue(null) } },
@@ -720,7 +724,7 @@ describe('AgentsController', () => {
         },
         {
           provide: ApiKeyGeneratorService,
-          useValue: { onboardAgent: mockOnboard, getKeyForAgent: jest.fn(), rotateKey: jest.fn() },
+          useValue: { onboardAgent: mockOnboard, getKeyForAgent: jest.fn(), rotateKey: jest.fn(), listKeys: jest.fn().mockResolvedValue({ keys: [] }), createKey: jest.fn(), deleteKey: jest.fn(), renameKey: jest.fn() },
         },
         { provide: ConfigService, useValue: { get: jest.fn() } },
         { provide: TenantCacheService, useValue: { resolve: jest.fn().mockResolvedValue(null) } },
