@@ -41,6 +41,7 @@ const mockGetSpecificityAssignments = vi.fn();
 const mockGetMessageDetails = vi.fn();
 const mockGetRoutingStatus = vi.fn();
 const mockListHeaderTiers = vi.fn();
+const mockListAgentKeys = vi.fn();
 const mockSetMessageFeedback = vi.fn();
 const mockClearMessageFeedback = vi.fn();
 vi.mock('../../src/services/api.js', () => ({
@@ -52,6 +53,7 @@ vi.mock('../../src/services/api.js', () => ({
   getMessageDetails: (...args: unknown[]) => mockGetMessageDetails(...args),
   getRoutingStatus: (...args: unknown[]) => mockGetRoutingStatus(...args),
   listHeaderTiers: (...args: unknown[]) => mockListHeaderTiers(...args),
+  listAgentKeys: (...args: unknown[]) => mockListAgentKeys(...args),
   setMessageFeedback: (...args: unknown[]) => mockSetMessageFeedback(...args),
   clearMessageFeedback: (...args: unknown[]) => mockClearMessageFeedback(...args),
 }));
@@ -223,6 +225,7 @@ describe('MessageLog', () => {
     mockGetSpecificityAssignments.mockResolvedValue([]);
     mockGetRoutingStatus.mockResolvedValue({ enabled: false });
     mockListHeaderTiers.mockResolvedValue([]);
+    mockListAgentKeys.mockResolvedValue({ keys: [] });
   });
 
   it('renders Messages heading', () => {
