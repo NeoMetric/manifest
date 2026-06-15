@@ -60,6 +60,53 @@ function shouldForwardAnthropicThinking(thinking: unknown, model: string): boole
 }
 
 /**
+ * Extract the reasoning effort string from an OpenAI-compatible request body.
+ * Supports both shapes:
+ *   - flat `reasoning_effort: "high"` (Chat Completions clients, e.g. Copilot)
+ *   - nested `reasoning: { effort: "high" }` (Responses API shape)
+ * The flat form takes precedence when both are present.
+ */
+function extractReasoningEffort(body: Record<string, unknown>): string | undefined {
+  if (typeof body.reasoning_effort === 'string' && body.reasoning_effort) {
+    return body.reasoning_effort;
+  }
+  const reasoning = body.reasoning;
+  if (reasoning && typeof reasoning === 'object' && !Array.isArray(reasoning)) {
+    const effort = (reasoning as Record<string, unknown>).effort;
+    if (typeof effort === 'string' && effort) return effort;
+  }
+  return undefined;
+}
+
+/**
+ * Convert an OpenAI-style reasoning effort into Anthropic-native `thinking` +
+ * `output_config` fields.  Accepts the full request body so it can read either
+ * the flat `reasoning_effort` field or the nested `reasoning.effort` field.
+ * Returns `undefined` when the body carries no usable effort value.
+ *
+ * Mapping:
+ *   `none`               → `{ thinking: { type: "disabled" } }`
+ *   `low`|`medium`|`high` → `{ thinking: { type: "adaptive" }, output_config: { effort } }`
+ */
+export function convertReasoningToAnthropicThinking(
+  body: Record<string, unknown>,
+): { thinking?: Record<string, unknown>; output_config?: Record<string, unknown> } | undefined {
+  const effort = extractReasoningEffort(body);
+  if (!effort) return undefined;
+
+  if (effort === 'none') {
+    return { thinking: { type: 'disabled' } };
+  }
+  if (effort === 'low' || effort === 'medium' || effort === 'high') {
+    return {
+      thinking: { type: 'adaptive' },
+      output_config: { effort },
+    };
+  }
+  return undefined;
+}
+
+/**
  * System prompt required by Anthropic's subscription OAuth API to unlock
  * sonnet/opus model families. Without it, subscription tokens can only
  * access haiku. This mirrors how the Copilot integration spoofs
@@ -380,8 +427,17 @@ export function toAnthropicRequest(
   }
 
   if (body.temperature !== undefined) result.temperature = body.temperature;
-  if (body.top_p !== undefined) result.top_p = body.top_p;
+  // top_p intentionally omitted — newer Anthropic models reject it with
+  // "top_p is deprecated for this model".  Users who need it for older models
+  // can configure it via the MPS param UI.
   if (body.top_k !== undefined) result.top_k = body.top_k;
+  // Convert OpenAI-style reasoning effort to Anthropic thinking/output_config.
+  // Only applied when the body does not already carry a native `thinking` field.
+  const reasoningConversion = convertReasoningToAnthropicThinking(body);
+  if (reasoningConversion && body.thinking === undefined) {
+    if (reasoningConversion.thinking) result.thinking = reasoningConversion.thinking;
+    if (reasoningConversion.output_config) result.output_config = reasoningConversion.output_config;
+  }
   // Anthropic-native fields forwarded when the inbound request originated as
   // Anthropic Messages (POST /v1/messages). Chat-completions clients won't
   // set these, so this is a no-op for the OpenAI-compat path.
@@ -493,6 +549,19 @@ export function applyAnthropicMessagesMutations(
       options?.targetModel,
     );
   }
+
+  // top_p intentionally omitted — newer Anthropic models reject it.
+  delete result.top_p;
+
+  // Convert OpenAI-style reasoning effort to Anthropic thinking/output_config.
+  const reasoningConversion = convertReasoningToAnthropicThinking(body);
+  if (reasoningConversion && body.thinking === undefined) {
+    if (reasoningConversion.thinking) result.thinking = reasoningConversion.thinking;
+    if (reasoningConversion.output_config) result.output_config = reasoningConversion.output_config;
+  }
+  // Strip OpenAI-only reasoning fields — Anthropic rejects unknown fields.
+  delete result.reasoning;
+  delete result.reasoning_effort;
 
   const thinkingLookup = options?.thinkingLookup;
   const thinkingRouteContext = options?.thinkingRouteContext;

@@ -117,7 +117,8 @@ describe('Anthropic Adapter', () => {
       };
       const result = toAnthropicRequest(body, 'claude-sonnet-4-20250514');
       expect(result.temperature).toBe(0.7);
-      expect(result.top_p).toBe(0.9);
+      // top_p is intentionally NOT forwarded — newer Anthropic models reject it.
+      expect(result.top_p).toBeUndefined();
     });
 
     it('forwards Anthropic-native top_k, thinking, and stop_sequences when present', () => {
@@ -166,6 +167,128 @@ describe('Anthropic Adapter', () => {
       expect(toAnthropicRequest(body, 'claude-opus-4-6').thinking).toEqual({
         type: 'adaptive',
       });
+    });
+
+    /* ── reasoning.effort → thinking conversion ── */
+
+    it('converts reasoning.effort "none" to thinking disabled', () => {
+      const body = {
+        messages: [{ role: 'user', content: 'Hi' }],
+        reasoning: { effort: 'none' },
+      };
+      const result = toAnthropicRequest(body, 'claude-sonnet-4-6');
+      expect(result.thinking).toEqual({ type: 'disabled' });
+      expect(result.reasoning).toBeUndefined();
+    });
+
+    it('converts reasoning.effort "low" to thinking adaptive + output_config', () => {
+      const body = {
+        messages: [{ role: 'user', content: 'Hi' }],
+        reasoning: { effort: 'low' },
+      };
+      const result = toAnthropicRequest(body, 'claude-sonnet-4-6');
+      expect(result.thinking).toEqual({ type: 'adaptive' });
+      expect(result.output_config).toEqual({ effort: 'low' });
+    });
+
+    it('converts reasoning.effort "medium" to thinking adaptive + output_config', () => {
+      const body = {
+        messages: [{ role: 'user', content: 'Hi' }],
+        reasoning: { effort: 'medium' },
+      };
+      const result = toAnthropicRequest(body, 'claude-sonnet-4-6');
+      expect(result.thinking).toEqual({ type: 'adaptive' });
+      expect(result.output_config).toEqual({ effort: 'medium' });
+    });
+
+    it('converts reasoning.effort "high" to thinking adaptive + output_config', () => {
+      const body = {
+        messages: [{ role: 'user', content: 'Hi' }],
+        reasoning: { effort: 'high' },
+      };
+      const result = toAnthropicRequest(body, 'claude-sonnet-4-6');
+      expect(result.thinking).toEqual({ type: 'adaptive' });
+      expect(result.output_config).toEqual({ effort: 'high' });
+    });
+
+    it('does not convert reasoning when body already has explicit thinking', () => {
+      const body = {
+        messages: [{ role: 'user', content: 'Hi' }],
+        reasoning: { effort: 'high' },
+        thinking: { type: 'enabled', budget_tokens: 4096 },
+      };
+      const result = toAnthropicRequest(body, 'claude-sonnet-4-6');
+      // Explicit thinking takes precedence over reasoning conversion.
+      expect(result.thinking).toEqual({ type: 'enabled', budget_tokens: 4096 });
+      expect(result.output_config).toBeUndefined();
+    });
+
+    it('ignores reasoning with unrecognized effort values', () => {
+      const body = {
+        messages: [{ role: 'user', content: 'Hi' }],
+        reasoning: { effort: 'turbo' },
+      };
+      const result = toAnthropicRequest(body, 'claude-sonnet-4-6');
+      expect(result.thinking).toBeUndefined();
+      expect(result.output_config).toBeUndefined();
+    });
+
+    it('ignores reasoning that is not an object', () => {
+      const body = {
+        messages: [{ role: 'user', content: 'Hi' }],
+        reasoning: 'invalid',
+      };
+      const result = toAnthropicRequest(body, 'claude-sonnet-4-6');
+      expect(result.thinking).toBeUndefined();
+    });
+
+    /* ── flat reasoning_effort (Chat Completions clients, e.g. Copilot) ── */
+
+    it('converts flat reasoning_effort "high" to thinking adaptive + output_config', () => {
+      const body = {
+        messages: [{ role: 'user', content: 'Hi' }],
+        reasoning_effort: 'high',
+      };
+      const result = toAnthropicRequest(body, 'claude-sonnet-4-6');
+      expect(result.thinking).toEqual({ type: 'adaptive' });
+      expect(result.output_config).toEqual({ effort: 'high' });
+    });
+
+    it('converts flat reasoning_effort "none" to thinking disabled', () => {
+      const body = {
+        messages: [{ role: 'user', content: 'Hi' }],
+        reasoning_effort: 'none',
+      };
+      const result = toAnthropicRequest(body, 'claude-sonnet-4-6');
+      expect(result.thinking).toEqual({ type: 'disabled' });
+    });
+
+    it('prefers flat reasoning_effort over nested reasoning.effort', () => {
+      const body = {
+        messages: [{ role: 'user', content: 'Hi' }],
+        reasoning_effort: 'high',
+        reasoning: { effort: 'low' },
+      };
+      const result = toAnthropicRequest(body, 'claude-sonnet-4-6');
+      expect(result.output_config).toEqual({ effort: 'high' });
+    });
+
+    it('does not leak reasoning_effort into the Anthropic request', () => {
+      const body = {
+        messages: [{ role: 'user', content: 'Hi' }],
+        reasoning_effort: 'high',
+      };
+      const result = toAnthropicRequest(body, 'claude-sonnet-4-6');
+      expect(result.reasoning_effort).toBeUndefined();
+    });
+
+    it('does not forward top_p even when present in the body', () => {
+      const body = {
+        messages: [{ role: 'user', content: 'Hi' }],
+        top_p: 0.9,
+      };
+      const result = toAnthropicRequest(body, 'claude-sonnet-4-20250514');
+      expect(result.top_p).toBeUndefined();
     });
 
     it('wraps a bare string `stop` value into stop_sequences (chat_completions accepts both shapes)', () => {
@@ -2682,13 +2805,57 @@ describe('Anthropic Adapter', () => {
         model: 'claude-sonnet-4-20250514',
         max_tokens: 1024,
         temperature: 0.5,
-        top_p: 0.9,
+        // top_p is intentionally stripped — newer models reject it.
         top_k: 40,
         stop_sequences: ['END'],
         thinking: { type: 'enabled', budget_tokens: 1024 },
         metadata: { user_id: 'u' },
         tool_choice: { type: 'auto' },
       });
+      expect(result.top_p).toBeUndefined();
+    });
+
+    it('converts reasoning.effort "high" to thinking adaptive in messages path', () => {
+      const result = applyAnthropicMessagesMutations({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 4096,
+        messages: [{ role: 'user', content: 'hi' }],
+        reasoning: { effort: 'high' },
+      });
+      expect(result.thinking).toEqual({ type: 'adaptive' });
+      expect(result.output_config).toEqual({ effort: 'high' });
+    });
+
+    it('converts reasoning.effort "none" to thinking disabled in messages path', () => {
+      const result = applyAnthropicMessagesMutations({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 4096,
+        messages: [{ role: 'user', content: 'hi' }],
+        reasoning: { effort: 'none' },
+      });
+      expect(result.thinking).toEqual({ type: 'disabled' });
+    });
+
+    it('converts flat reasoning_effort and strips it in messages path', () => {
+      const result = applyAnthropicMessagesMutations({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 4096,
+        messages: [{ role: 'user', content: 'hi' }],
+        reasoning_effort: 'high',
+      });
+      expect(result.thinking).toEqual({ type: 'adaptive' });
+      expect(result.output_config).toEqual({ effort: 'high' });
+      expect(result.reasoning_effort).toBeUndefined();
+    });
+
+    it('strips top_p in messages path', () => {
+      const result = applyAnthropicMessagesMutations({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 4096,
+        messages: [{ role: 'user', content: 'hi' }],
+        top_p: 1,
+      });
+      expect(result.top_p).toBeUndefined();
     });
 
     it('downgrades Opus/Fable xhigh effort when Manifest resolves the request to Sonnet', () => {
