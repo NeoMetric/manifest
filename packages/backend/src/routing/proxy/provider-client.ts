@@ -30,6 +30,7 @@ import { toNativeResponsesRequest } from './responses-adapter';
 import { forwardKiroChat } from './kiro-adapter';
 import { OpencodeGoCatalogService } from '../../model-discovery/opencode-go-catalog.service';
 import { ProviderModelRegistryService } from '../../model-discovery/provider-model-registry.service';
+import { sanitizeJsonPayload } from './json-payload-sanitizer';
 
 export interface ForwardResult {
   response: Response;
@@ -276,6 +277,8 @@ export class ProviderClient {
     const finalHeaders =
       affinity || extraHeaders ? { ...headers, ...extraHeaders, ...affinity?.headers } : headers;
 
+    const sanitizedRequestBody = sanitizeJsonPayload(requestBody);
+
     this.logger.debug(`Forwarding to ${endpointKey}: ${url.replace(/key=[^&]+/, 'key=***')}`);
 
     if (process.env.MANIFEST_PROXY_DEBUG === 'true') {
@@ -285,7 +288,7 @@ export class ProviderClient {
           k.toLowerCase() === 'authorization' || k.toLowerCase() === 'x-api-key' ? '***' : v;
       }
       this.logger.debug(`[${endpointKey}] Headers: ${JSON.stringify(redactedHeaders)}`);
-      this.logger.debug(`[${endpointKey}] Body: ${JSON.stringify(requestBody, null, 2)}`);
+      this.logger.debug(`[${endpointKey}] Body: ${JSON.stringify(sanitizedRequestBody, null, 2)}`);
     }
 
     // SSRF defense in depth for user-supplied endpoint URLs (custom providers,

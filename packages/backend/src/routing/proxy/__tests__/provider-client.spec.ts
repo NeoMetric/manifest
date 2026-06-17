@@ -79,6 +79,34 @@ describe('ProviderClient', () => {
       expect(sentBody.model).toBe('gpt-4o');
     });
 
+    it('replaces lone surrogates without stripping valid emoji from forwarded JSON', async () => {
+      mockFetch.mockResolvedValue(new Response('{}', { status: 200 }));
+      const validEmoji = String.fromCodePoint(0x1f600);
+      const loneHighSurrogate = String.fromCharCode(0xd83d);
+      const emojiBody = {
+        messages: [
+          {
+            role: 'user',
+            content: `Prefix ${validEmoji} middle ${loneHighSurrogate} suffix`,
+          },
+        ],
+      };
+
+      await client.forward({
+        provider: 'openai',
+        apiKey: 'sk-test',
+        model: 'gpt-4o',
+        body: emojiBody,
+        stream: false,
+      });
+
+      const rawBody = mockFetch.mock.calls[0][1].body;
+      const sentBody = JSON.parse(rawBody);
+      expect(sentBody.messages[0].content).toBe(`Prefix ${validEmoji} middle � suffix`);
+      expect(rawBody).toContain(validEmoji);
+      expect(rawBody.toLowerCase()).not.toContain('\\ud83d');
+    });
+
     it('builds correct URL for deepseek', async () => {
       mockFetch.mockResolvedValue(new Response('{}', { status: 200 }));
       const result = await client.forward({

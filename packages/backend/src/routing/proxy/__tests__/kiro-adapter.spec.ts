@@ -422,6 +422,31 @@ describe('kiro-adapter', () => {
     });
   });
 
+  it('sanitizes lone surrogates in forwarded Kiro JSON while preserving valid emoji', async () => {
+    mockFetch.mockResolvedValue(new Response('forbidden', { status: 403 }));
+    const validEmoji = String.fromCodePoint(0x1f600);
+    const loneHighSurrogate = String.fromCharCode(0xd83d);
+
+    await forwardKiroChat({
+      apiKey: 'ksk_test',
+      model: 'auto',
+      body: {
+        messages: [
+          {
+            role: 'user',
+            content: `Prefix ${validEmoji} middle ${loneHighSurrogate} suffix`,
+          },
+        ],
+      },
+      stream: false,
+      timeoutMs: 1000,
+    });
+
+    const rawBody = mockFetch.mock.calls[0][1].body as string;
+    expect(rawBody).toContain(validEmoji);
+    expect(rawBody.toLowerCase()).not.toContain('\\ud83d');
+  });
+
   it('passes upstream Kiro errors through unchanged', async () => {
     mockFetch.mockResolvedValue(new Response('forbidden', { status: 403 }));
 

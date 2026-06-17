@@ -1,6 +1,7 @@
 import { Buffer } from 'node:buffer';
 import { randomUUID } from 'node:crypto';
 import type { DiscoveredModel } from '../../model-discovery/model-fetcher';
+import { sanitizeJsonPayload } from './json-payload-sanitizer';
 
 export const KIRO_BASE_URL = 'https://q.us-east-1.amazonaws.com';
 export const KIRO_MODELS_TARGET = 'AmazonCodeWhispererService.ListAvailableModels';
@@ -463,10 +464,11 @@ export async function forwardKiroChat(opts: {
     'x-amzn-kiro-agent-mode': KIRO_AGENT_MODE,
     ...opts.extraHeaders,
   };
+  const sanitizedRequestBody = sanitizeJsonPayload(buildKiroChatRequest(opts.body, opts.model));
   const upstream = await fetch(KIRO_BASE_URL, {
     method: 'POST',
     headers,
-    body: JSON.stringify(buildKiroChatRequest(opts.body, opts.model)),
+    body: JSON.stringify(sanitizedRequestBody),
     signal: fetchSignal,
     redirect: 'error',
   });
