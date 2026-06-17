@@ -2325,7 +2325,7 @@ describe('ProviderModelFetcherService', () => {
   /* ── Copilot parser ── */
 
   describe('parseCopilot (via copilot provider)', () => {
-    it('should parse Copilot models and add copilot/ prefix', async () => {
+    it('should parse Copilot models without prefixing the provider id', async () => {
       fetchSpy.mockResolvedValue({
         ok: true,
         json: async () => ({
@@ -2344,7 +2344,7 @@ describe('ProviderModelFetcherService', () => {
       expect(result).toHaveLength(2);
       expect(result[0]).toEqual(
         expect.objectContaining({
-          id: 'copilot/claude-opus-4.6',
+          id: 'claude-opus-4.6',
           displayName: 'claude-opus-4.6',
           provider: 'copilot',
           contextWindow: 128000,
@@ -2354,7 +2354,7 @@ describe('ProviderModelFetcherService', () => {
           supportedEndpoints: ['/chat/completions', '/v1/messages'],
         }),
       );
-      expect(result[1].id).toBe('copilot/gpt-4o');
+      expect(result[1].id).toBe('gpt-4o');
     });
 
     it('should send correct Copilot headers', async () => {
@@ -2397,7 +2397,7 @@ describe('ProviderModelFetcherService', () => {
 
       const result = await service.fetch('copilot', 'tid=token');
       expect(result).toHaveLength(1);
-      expect(result[0].id).toBe('copilot/valid-model');
+      expect(result[0].id).toBe('valid-model');
     });
 
     it('should return [] when data is not an array', async () => {
@@ -2426,8 +2426,8 @@ describe('ProviderModelFetcherService', () => {
 
       const result = await service.fetch('copilot', 'tid=token');
       expect(result).toHaveLength(2);
-      expect(result[0].id).toBe('copilot/claude-opus-4.7');
-      expect(result[1].id).toBe('copilot/gpt-4o');
+      expect(result[0].id).toBe('claude-opus-4.7');
+      expect(result[1].id).toBe('gpt-4o');
     });
   });
 
@@ -2603,14 +2603,14 @@ describe('ProviderModelFetcherService', () => {
       );
       expect(result).toEqual([
         expect.objectContaining({
-          id: 'commandcode/claude-sonnet-4-6',
+          id: 'claude-sonnet-4-6',
           displayName: 'Claude Sonnet 4.6',
           provider: 'commandcode',
           contextWindow: 1000000,
           capabilityCode: true,
         }),
         expect.objectContaining({
-          id: 'commandcode/deepseek/deepseek-v4-flash',
+          id: 'deepseek/deepseek-v4-flash',
           displayName: 'DeepSeek V4 Flash',
           provider: 'commandcode',
           contextWindow: 1000000,
@@ -2662,12 +2662,12 @@ describe('ProviderModelFetcherService', () => {
         }),
       );
       expect(result).toHaveLength(3);
-      // IDs must be prefixed so they cannot collide with the same bare model
-      // names served by a directly-connected Google/Qwen/Anthropic provider.
+      // IDs are stored bare (without provider prefix) so explicit
+      // `provider/model` routing resolves correctly.
       expect(result.map((m) => m.id)).toEqual([
-        'opencode-zen/qwen3.6-plus',
-        'opencode-zen/claude-opus-4-7',
-        'opencode-zen/gemini-3-flash',
+        'qwen3.6-plus',
+        'claude-opus-4-7',
+        'gemini-3-flash',
       ]);
       expect(result[0]).toEqual(
         expect.objectContaining({ provider: 'opencode-zen', displayName: 'qwen3.6-plus' }),

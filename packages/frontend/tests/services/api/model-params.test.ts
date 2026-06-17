@@ -52,8 +52,8 @@ describe('model-params API client', () => {
       json: () => Promise.resolve(specs),
     } as unknown as Response);
 
-    const first = await getModelParamSpecs('demo', 'copilot', 'subscription', 'copilot/gpt-5.5');
-    const second = await getModelParamSpecs('demo', 'Copilot', 'subscription', 'copilot/gpt-5.5');
+    const first = await getModelParamSpecs('demo', 'copilot', 'subscription', 'gpt-5.5');
+    const second = await getModelParamSpecs('demo', 'Copilot', 'subscription', 'gpt-5.5');
 
     expect(first).toBe(second);
     expect(fetch).toHaveBeenCalledTimes(2);
@@ -74,10 +74,10 @@ describe('model-params API client', () => {
       } as unknown as Response);
 
     await expect(
-      getModelParamSpecs('demo', 'copilot', 'subscription', 'copilot/gpt-5.5'),
+      getModelParamSpecs('demo', 'copilot', 'subscription', 'gpt-5.5'),
     ).rejects.toThrow('temporary outage');
     await expect(
-      getModelParamSpecs('demo', 'copilot', 'subscription', 'copilot/gpt-5.5'),
+      getModelParamSpecs('demo', 'copilot', 'subscription', 'gpt-5.5'),
     ).resolves.toEqual([]);
     expect(fetch).toHaveBeenCalledTimes(2);
   });

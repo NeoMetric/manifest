@@ -184,7 +184,7 @@ function enrichPioneerModels(
 const parseCommandCode = createModelParser<CommandCodeModelEntry>({
   arrayKey: 'data',
   filter: (entry) => typeof entry.id === 'string' && entry.id.length > 0,
-  getId: (entry) => `commandcode/${entry.id}`,
+  getId: (entry) => entry.id,
   getDisplayName: (entry, id) => entry.name || id,
   contextWindow: (entry) => entry.context_length ?? DEFAULT_CONTEXT_WINDOW,
   capabilityCode: true,
@@ -579,7 +579,7 @@ const parseOpenaiSubscription = createModelParser<OpenAISubscriptionModelEntry>(
 const parseCopilot = createModelParser<OpenAIModelEntry>({
   arrayKey: 'data',
   filter: (entry) => typeof entry.id === 'string' && entry.id.length > 0,
-  getId: (entry) => `copilot/${entry.id}`,
+  getId: (entry) => entry.id,
   getDisplayName: (entry) => entry.id,
   inputPricePerToken: 0,
   outputPricePerToken: 0,
@@ -596,7 +596,7 @@ const parseCopilot = createModelParser<OpenAIModelEntry>({
 const parseOpencodeZen = createModelParser<OpenAIModelEntry>({
   arrayKey: 'data',
   filter: (entry) => typeof entry.id === 'string' && entry.id.length > 0,
-  getId: (entry) => `opencode-zen/${entry.id}`,
+  getId: (entry) => entry.id,
   getDisplayName: (entry) => entry.id,
 });
 
@@ -1093,7 +1093,7 @@ export class ProviderModelFetcherService {
       ? await this.opencodeGoCatalog.refresh()
       : await this.opencodeGoCatalog.list();
     return entries.map((entry) => ({
-      id: `opencode-go/${entry.id}`,
+      id: entry.id,
       displayName: entry.displayName,
       provider: 'opencode-go',
       contextWindow: OPENCODE_GO_CONTEXT_WINDOW,

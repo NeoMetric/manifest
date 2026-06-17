@@ -248,6 +248,12 @@ function providerlessModelBaseCandidates(providerId: string, model: string): rea
     pushUnique(out, candidate);
   };
 
+  // Resolve gateway providers (e.g. opencode-go/glm-5.1 → glm-5.1).
+  const resolved = resolveUnderlyingModelIdentity(providerId, model);
+  if (resolved.provider !== providerId) {
+    add(resolved.model);
+  }
+  // Legacy: also check for a model-id prefix (backward compat with old stored IDs).
   add(underlyingGatewayModel(model));
   const normalizedProvider = providerId.toLowerCase();
   if (model.toLowerCase().startsWith(`${normalizedProvider}/`)) {

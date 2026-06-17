@@ -101,34 +101,35 @@ describe('underlyingGatewayModel', () => {
 });
 
 describe('resolveUnderlyingModelIdentity', () => {
-  it('resolves a gateway model id to its provenance provider and bare model', () => {
-    expect(resolveUnderlyingModelIdentity('opencode-go', 'opencode-go/glm-5.1')).toEqual({
+  it('resolves a gateway provider to its provenance provider and bare model', () => {
+    // New format: bare model IDs with gateway provider
+    expect(resolveUnderlyingModelIdentity('opencode-go', 'glm-5.1')).toEqual({
       provider: 'zai',
       model: 'glm-5.1',
     });
-    expect(resolveUnderlyingModelIdentity('opencode-go', 'opencode-go/kimi-k2.6')).toEqual({
+    expect(resolveUnderlyingModelIdentity('opencode-go', 'kimi-k2.6')).toEqual({
       provider: 'moonshot',
       model: 'kimi-k2.6',
     });
-    expect(resolveUnderlyingModelIdentity('opencode-zen', 'opencode-zen/qwen3.6-plus')).toEqual({
+    expect(resolveUnderlyingModelIdentity('opencode-zen', 'qwen3.6-plus')).toEqual({
       provider: 'qwen',
       model: 'qwen3.6-plus',
     });
   });
 
   it('resolves MiMo gateway models to Xiaomi', () => {
-    expect(resolveUnderlyingModelIdentity('opencode-go', 'opencode-go/mimo-v2.5')).toEqual({
+    expect(resolveUnderlyingModelIdentity('opencode-go', 'mimo-v2.5')).toEqual({
       provider: 'xiaomi',
       model: 'mimo-v2.5',
     });
   });
 
   it('returns an undefined provider when the underlying id matches no known provider', () => {
-    expect(resolveUnderlyingModelIdentity('opencode-go', 'opencode-go/big-pickle')).toEqual({
+    expect(resolveUnderlyingModelIdentity('opencode-go', 'big-pickle')).toEqual({
       provider: undefined,
       model: 'big-pickle',
     });
-    expect(resolveUnderlyingModelIdentity('opencode-zen', 'opencode-zen/big-pickle')).toEqual({
+    expect(resolveUnderlyingModelIdentity('opencode-zen', 'big-pickle')).toEqual({
       provider: undefined,
       model: 'big-pickle',
     });

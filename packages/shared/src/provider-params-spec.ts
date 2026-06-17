@@ -1,5 +1,5 @@
 import type { AuthType } from './auth-types';
-import { resolveUnderlyingModelIdentity, underlyingGatewayModel } from './provider-inference';
+import { resolveUnderlyingModelIdentity } from './provider-inference';
 import { normalizeProviderName, SHARED_PROVIDER_BY_ID_OR_ALIAS } from './providers';
 import type { JsonPrimitive, JsonValue } from './request-params';
 
@@ -111,20 +111,25 @@ export function normalizeProviderParamProviderId(providerId: string): string {
  * Resolve the catalog lookup identity for a model.
  *
  * Gateways (e.g. OpenCode Go) are transparent transports: a model like
- * `opencode-go/deepseek-v4-pro` exposes the underlying provider's native
- * parameters, so it resolves to `(deepseek, api_key, deepseek-v4-pro)`. The
- * gateway's own subscription billing is irrelevant to which knobs the
- * model's API accepts, so authType collapses to `api_key`. Non-gateway ids
- * are returned unchanged.
+ * `deepseek-v4-pro` on the `opencode-go` provider exposes the underlying
+ * provider's native parameters, so it resolves to
+ * `(deepseek, api_key, deepseek-v4-pro)`. The gateway's own subscription
+ * billing is irrelevant to which knobs the model's API accepts, so authType
+ * collapses to `api_key`. Non-gateway ids are returned unchanged.
  */
 function paramLookupIdentity(
   providerId: string | undefined,
   authType: AuthType | undefined,
   model: string | undefined,
 ): { providerId: string | undefined; authType: AuthType | undefined; model: string | undefined } {
-  if (!model || underlyingGatewayModel(model) === null) return { providerId, authType, model };
+  if (!model) return { providerId, authType, model };
   const resolved = resolveUnderlyingModelIdentity(providerId, model);
-  return { providerId: resolved.provider, authType: 'api_key', model: resolved.model };
+  // If resolveUnderlyingModelIdentity returned a different provider, the
+  // model is a gateway transport — collapse authType to api_key.
+  if (resolved.provider !== providerId) {
+    return { providerId: resolved.provider, authType: 'api_key', model: resolved.model };
+  }
+  return { providerId, authType, model };
 }
 
 export function getProviderParamSpecs(

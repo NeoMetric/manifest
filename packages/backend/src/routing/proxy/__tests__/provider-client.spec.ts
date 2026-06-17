@@ -1685,7 +1685,7 @@ describe('ProviderClient', () => {
     it('routes Copilot chat input to /responses when supported_endpoints excludes chat', async () => {
       mockFetch.mockResolvedValue(new Response('{}', { status: 200 }));
       const metadataClient = createClientWithCopilotMetadata({
-        'copilot/gpt-5.5': ['/responses', 'ws:/responses'],
+        'gpt-5.5': ['/responses', 'ws:/responses'],
       });
 
       const result = await metadataClient.forward({
@@ -1709,7 +1709,7 @@ describe('ProviderClient', () => {
     it('keeps Copilot chat input on /chat/completions when chat is supported', async () => {
       mockFetch.mockResolvedValue(new Response('{}', { status: 200 }));
       const metadataClient = createClientWithCopilotMetadata({
-        'copilot/gpt-5.4': ['/responses', '/chat/completions', 'ws:/responses'],
+        'gpt-5.4': ['/responses', '/chat/completions', 'ws:/responses'],
       });
 
       const result = await metadataClient.forward({
@@ -1732,7 +1732,7 @@ describe('ProviderClient', () => {
     it('routes Copilot Responses input to /responses when supported', async () => {
       mockFetch.mockResolvedValue(new Response('{}', { status: 200 }));
       const metadataClient = createClientWithCopilotMetadata({
-        'copilot/gpt-5.4': ['/responses', '/chat/completions'],
+        'gpt-5.4': ['/responses', '/chat/completions'],
       });
 
       const result = await metadataClient.forward({
@@ -1753,7 +1753,7 @@ describe('ProviderClient', () => {
     it('routes Copilot Responses input to /chat/completions when only chat is supported', async () => {
       mockFetch.mockResolvedValue(new Response('{}', { status: 200 }));
       const metadataClient = createClientWithCopilotMetadata({
-        'copilot/claude-sonnet-4.6': ['/chat/completions', '/v1/messages'],
+        'claude-sonnet-4.6': ['/chat/completions', '/v1/messages'],
       });
 
       const result = await metadataClient.forward({

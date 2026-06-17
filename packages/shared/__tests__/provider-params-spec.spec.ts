@@ -151,7 +151,7 @@ describe('provider-params-spec', () => {
         catalog,
         'opencode-go',
         'subscription',
-        'opencode-go/deepseek-v4-pro',
+        'deepseek-v4-pro',
       );
       expect(specs.map((spec) => spec.path)).toEqual(['reasoning_effort']);
       expect(specs[0].provider).toBe('deepseek');
@@ -161,11 +161,11 @@ describe('provider-params-spec', () => {
     it('returns [] for gateway models whose underlying provider is absent from the catalog', () => {
       // moonshot (kimi) is not in the catalog.
       expect(
-        getProviderParamSpecs(catalog, 'opencode-go', 'subscription', 'opencode-go/kimi-k2.6'),
+        getProviderParamSpecs(catalog, 'opencode-go', 'subscription', 'kimi-k2.6'),
       ).toEqual([]);
       // Xiaomi is not in this params catalog.
       expect(
-        getProviderParamSpecs(catalog, 'opencode-go', 'subscription', 'opencode-go/mimo-v2.5'),
+        getProviderParamSpecs(catalog, 'opencode-go', 'subscription', 'mimo-v2.5'),
       ).toEqual([]);
     });
 
@@ -222,7 +222,7 @@ describe('provider-params-spec', () => {
           catalog,
           'opencode-go',
           'subscription',
-          'opencode-go/deepseek-v4-pro',
+          'deepseek-v4-pro',
         ),
       ).toEqual(['text', 'stream']);
     });

@@ -33,6 +33,10 @@ export { MODEL_PREFIX_MAP };
  * Gateway model-id prefixes. A gateway transparently proxies another
  * provider's API, so the id after the prefix is the underlying provider's
  * own model id (e.g. `opencode-go/deepseek-v4-pro` -> `deepseek-v4-pro`).
+ *
+ * Legacy: these prefixes were embedded in stored model IDs. New code stores
+ * bare IDs and resolves gateways via the provider field instead (see
+ * `GATEWAY_PROVIDER_IDS`).
  */
 const GATEWAY_MODEL_PREFIXES = ['opencode-go/', 'opencode-zen/'] as const;
 
@@ -47,6 +51,13 @@ for (const provider of SHARED_PROVIDERS) {
 export function resolveProviderToken(token: string): string | undefined {
   return BEDROCK_PROVIDER_TOKENS.get(token.toLowerCase());
 }
+
+/**
+ * Gateway provider IDs. A gateway transparently proxies another provider's
+ * API, so its model IDs are bare native IDs (e.g. `glm-5.1`) whose
+ * provenance provider is inferred from the model name itself.
+ */
+const GATEWAY_PROVIDER_IDS = new Set(['opencode-go', 'opencode-zen']);
 
 /**
  * If `model` is a gateway model id, return the underlying provider's model
@@ -73,8 +84,8 @@ export function inferProviderFromModel(model: string): string | undefined {
 /**
  * Resolve a `(provider, model)` pair to the underlying provider and model that
  * own its metadata, transparently unwrapping gateway transports. For a gateway
- * model id (e.g. `opencode-go/glm-5.1`) this returns the provenance provider
- * inferred from the underlying id and that bare id
+ * provider (e.g. OpenCode Go with model `glm-5.1`) this returns the provenance
+ * provider inferred from the bare id and that bare id
  * (`{ provider: 'zai', model: 'glm-5.1' }`); non-gateway pairs are returned
  * unchanged. The provider is `undefined` when the underlying id matches no
  * known provider, so callers decide whether to fall back. Capability and
@@ -85,6 +96,11 @@ export function resolveUnderlyingModelIdentity(
   provider: string | undefined,
   model: string,
 ): { provider: string | undefined; model: string } {
+  // Primary: check if the provider itself is a gateway.
+  if (provider && GATEWAY_PROVIDER_IDS.has(provider)) {
+    return { provider: inferProviderFromModel(model), model };
+  }
+  // Legacy: also check for a model-id prefix (backward compat with old stored IDs).
   const underlying = underlyingGatewayModel(model);
   if (underlying === null) return { provider, model };
   return { provider: inferProviderFromModel(underlying), model: underlying };

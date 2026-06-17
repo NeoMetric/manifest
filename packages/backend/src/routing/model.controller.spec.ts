@@ -289,7 +289,7 @@ describe('ModelController', () => {
     it('includes the per-request cost for OpenCode Go subscription models', async () => {
       mockDiscoveryService.getModelsForAgent.mockResolvedValue([
         makeDiscovered({
-          id: 'opencode-go/glm-5.1',
+          id: 'glm-5.1',
           provider: 'opencode-go',
           authType: 'subscription',
         }),
@@ -298,16 +298,14 @@ describe('ModelController', () => {
 
       const result = await controller.getAvailableModels(mockCtx, mockAgentName);
 
-      expect(mockOpencodeGoCatalog.resolveCostPerRequest).toHaveBeenCalledWith(
-        'opencode-go/glm-5.1',
-      );
+      expect(mockOpencodeGoCatalog.resolveCostPerRequest).toHaveBeenCalledWith('glm-5.1');
       expect(result[0].cost_per_request).toBe(0.013636);
     });
 
     it('omits cost_per_request when OpenCode Go has no published limit', async () => {
       mockDiscoveryService.getModelsForAgent.mockResolvedValue([
         makeDiscovered({
-          id: 'opencode-go/mimo-v25',
+          id: 'mimo-v25',
           provider: 'opencode-go',
           authType: 'subscription',
         }),

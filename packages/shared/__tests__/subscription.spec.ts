@@ -340,8 +340,8 @@ describe('getSubscriptionKnownModels', () => {
 
   it('returns known models for copilot', () => {
     const models = getSubscriptionKnownModels('copilot');
-    expect(models).toContain('copilot/claude-opus-4.6');
-    expect(models).toContain('copilot/gpt-5.4');
+    expect(models).toContain('claude-opus-4.6');
+    expect(models).toContain('gpt-5.4');
   });
 
   it('returns known models for BytePlus ModelArk Coding Plan', () => {

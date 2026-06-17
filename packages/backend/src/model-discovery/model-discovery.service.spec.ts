@@ -1936,7 +1936,7 @@ describe('ModelDiscoveryService', () => {
       mockDecrypt.mockReturnValue('ghu_github_oauth_token');
       mockCopilotTokenService.getCopilotToken.mockResolvedValue('tid=copilot-api-token');
 
-      const models = [makeModel({ id: 'copilot/claude-opus-4.6', provider: 'copilot' })];
+      const models = [makeModel({ id: 'claude-opus-4.6', provider: 'copilot' })];
       fetcher.fetch.mockResolvedValue(models);
 
       await service.discoverModels(
