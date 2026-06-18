@@ -1,0 +1,102 @@
+.model-config-provider {
+  margin-bottom: 32px;
+}
+
+.model-config-provider__header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.model-config-provider__icon {
+  display: inline-flex;
+  align-items: center;
+  color: hsl(var(--foreground));
+}
+
+.model-config-provider__header h2 {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  margin: 0;
+}
+
+.model-config-provider__logo {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  object-fit: contain;
+}
+
+.model-config-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+}
+
+.model-config-card {
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius-md);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: border-color 0.15s;
+}
+
+.model-config-card:hover {
+  border-color: hsl(var(--ring));
+}
+
+.model-config-card--configured {
+  border-color: hsl(var(--primary) / 0.4);
+  background: hsl(var(--primary) / 0.04);
+}
+
+.model-config-card__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.model-config-card__name {
+  font-weight: 600;
+  font-size: var(--font-size-sm);
+  color: hsl(var(--foreground));
+}
+
+.badge--auth {
+  font-size: var(--font-size-xs);
+  background: hsl(var(--muted));
+  color: hsl(var(--muted-foreground));
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  font-weight: 500;
+}
+
+.badge--capability {
+  font-size: var(--font-size-xs);
+  background: hsl(var(--primary) / 0.12);
+  color: hsl(var(--primary));
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  font-weight: 500;
+}
+
+.model-config-card__info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.model-config-card__price {
+  font-size: var(--font-size-sm);
+  color: hsl(var(--muted-foreground));
+}
+
+.model-config-card__context {
+  font-size: var(--font-size-xs);
+  color: hsl(var(--muted-foreground));
+}

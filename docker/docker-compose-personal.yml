@@ -98,6 +98,7 @@
         # Log full HTTP request headers and body for every proxied LLM request.
         # WARNING: verbose — use only for debugging. API keys are redacted.
         - MANIFEST_PROXY_DEBUG=${MANIFEST_PROXY_DEBUG:-}
+        - MANIFEST_PROXY_DEBUG_INCOMING=${MANIFEST_PROXY_DEBUG_INCOMING:-}
       healthcheck:
         test:
           - "CMD"

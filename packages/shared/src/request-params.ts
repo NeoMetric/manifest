@@ -24,7 +24,7 @@ export function applyRequestParamDefaults<T extends Record<string, unknown>>(
   specs: readonly ProviderParamSpec[],
 ): T {
   const orderedSpecs = [...specs].sort(compareProviderParamSpecs);
-  if (!defaults) return omitProviderInapplicableParams(body, orderedSpecs);
+  if (!defaults) return body;
 
   const expanded = expandConfiguredParamDefaults(defaults, orderedSpecs);
   let merged: Record<string, unknown> = {};
