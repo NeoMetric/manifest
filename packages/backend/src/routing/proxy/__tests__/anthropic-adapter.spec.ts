@@ -120,6 +120,30 @@ describe('Anthropic Adapter', () => {
       expect(result.top_p).toBe(0.9);
     });
 
+    it('drops temperature and top_p for Anthropic models that deprecate them', () => {
+      const body = {
+        messages: [{ role: 'user', content: 'Hi' }],
+        temperature: 0.7,
+        top_p: 0.9,
+        top_k: 40,
+      };
+      const result = toAnthropicRequest(body, 'claude-sonnet-4-5-20250929');
+      expect(result.temperature).toBeUndefined();
+      expect(result.top_p).toBeUndefined();
+      expect(result.top_k).toBe(40);
+    });
+
+    it('keeps temperature and top_p for older Anthropic models that still accept them', () => {
+      const body = {
+        messages: [{ role: 'user', content: 'Hi' }],
+        temperature: 0.7,
+        top_p: 0.9,
+      };
+      const result = toAnthropicRequest(body, 'claude-sonnet-4-20250514');
+      expect(result.temperature).toBe(0.7);
+      expect(result.top_p).toBe(0.9);
+    });
+
     it('forwards Anthropic-native top_k, thinking, and stop_sequences when present', () => {
       const body = {
         messages: [{ role: 'user', content: 'Hi' }],

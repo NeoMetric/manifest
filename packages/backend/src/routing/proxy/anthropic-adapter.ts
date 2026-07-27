@@ -47,6 +47,17 @@ function isClaudeHaikuModel(model: string): boolean {
   return bare.startsWith('claude-haiku-');
 }
 
+// Anthropic deprecates `temperature` and `top_p` on Sonnet 4.5+, Haiku 4.5+,
+// and Opus 4+. Older models still accept them. We drop both when the model
+// version suffix is >= 4.5 on those families so a chat-completions client
+// sending OpenAI-shaped defaults does not get a 400 from the upstream.
+const ANTHROPIC_DEPRECATED_SAMPLING_RE =
+  /^claude-(?:sonnet|haiku|opus)-(?:4-(?:[5-9]|\d{2,})|5)/;
+
+function dropsAnthropicSamplingParams(model: string): boolean {
+  return ANTHROPIC_DEPRECATED_SAMPLING_RE.test(bareAnthropicModel(model));
+}
+
 function shouldForwardAnthropicThinking(thinking: unknown, model: string): boolean {
   if (
     thinking &&
@@ -402,8 +413,10 @@ export function toAnthropicRequest(
     );
   }
 
-  if (body.temperature !== undefined) result.temperature = body.temperature;
-  if (body.top_p !== undefined) result.top_p = body.top_p;
+  if (!dropsAnthropicSamplingParams(options?.targetModel ?? _model)) {
+    if (body.temperature !== undefined) result.temperature = body.temperature;
+    if (body.top_p !== undefined) result.top_p = body.top_p;
+  }
   if (body.top_k !== undefined) result.top_k = body.top_k;
   // Anthropic-native fields forwarded when the inbound request originated as
   // Anthropic Messages (POST /v1/messages). Chat-completions clients won't
